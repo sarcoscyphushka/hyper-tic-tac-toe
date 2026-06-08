@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Гипер-крестики-нолики - Правильная версия</title>
+    <style>
+        * {
+            user-select: none;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0;
+            padding: 20px;
+        }
+        .game-box {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            max-width: 900px;
+            width: 100%;
+        }
+        .players {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .player-card {
+            flex: 1;
+            text-align: center;
+            padding: 12px;
+            border-radius: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 2px solid transparent;
+        }
+        .player-x {
+            background: #E3F2FD;
+            color: #1976D2;
+        }
+        .player-o {
+            background: #FFEBEE;
+            color: #D32F2F;
+        }
+        .player-active {
+            border: 2px solid #4CAF50;
+            box-shadow: 0 0 10px rgba(76, 175, 80, 0.3);
+        }
+        .scores {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .score {
+            flex: 1;
+            text-align: center;
+            padding: 10px;
+            border-radius: 12px;
+            font-weight: bold;
+        }
+        .score-x { background: #E3F2FD; color: #1976D2; }
+        .score-o { background: #FFEBEE; color: #D32F2F; }
+        .score span:first-child { font-size: 1.8em; display: block; }
+        .score span:last-child { font-size: 2em; }
+        
+        .status {
+            background: #f0f0f0;
+            padding: 12px;
+            border-radius: 12px;
+            text-align: center;
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+        .big-board {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            background: #333;
+            padding: 8px;
+            border-radius: 12px;
+        }
+        .big-cell {
+            background: white;
+            border-radius: 8px;
+            padding: 6px;
+            position: relative;
+            aspect-ratio: 1;
+        }
+        .big-cell.highlight {
+            background: #c8e6c9;
+            box-shadow: 0 0 0 2px #2e7d32;
+        }
+        .big-cell.won::after {
+            content: attr(data-winner);
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            font-size: 3.5em;
+            font-weight: bold;
+            transform: translate(-50%, -50%);
+            opacity: 0.3;
+            pointer-events: none;
+        }
+        .small-board {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 3px;
+            background: #ddd;
+            padding: 3px;
+            border-radius: 5px;
+            height: 100%;
+        }
+        .cell {
+            background: white;
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2em;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: 0.1s;
+        }
+        .cell.taken {
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+        .cell.x { color: #2196F3; }
+        .cell.o { color: #F44336; }
+        .cell:hover:not(.taken) {
+            background: #e0e0e0;
+            transform: scale(0.95);
+        }
+        button {
+            margin-top: 20px;
+            width: 100%;
+            padding: 12px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 30px;
+            font-size: 1.1em;
+            cursor: pointer;
+        }
+        .turn-hint {
+            text-align: center;
+            margin-top: 10px;
+            font-size: 0.9em;
+            color: #666;
+        }
+        .rule-note {
+            background: #FFF3E0;
+            padding: 8px;
+            margin-top: 10px;
+            border-radius: 8px;
+            font-size: 0.8em;
+            color: #E65100;
+            text-align: center;
+        }
+        @media (max-width: 550px) {
+            .game-box { padding: 12px; }
+            .cell { font-size: 0.8em; }
+        }
+    </style>
+</head>
+<body>
+<div class="game-box">
+    <div class="players">
+        <div class="player-card player-x" id="playerXBtn">
+            <div>❌ Игрок X</div>
+            <small>нажмите, чтобы играть за X</small>
+        </div>
+        <div class="player-card player-o" id="playerOBtn">
+            <div>⭕ Игрок O</div>
+            <small>нажмите, чтобы играть за O</small>
+        </div>
+    </div>
+    <div class="scores">
+        <div class="score score-x"><span>❌ X</span><span id="scoreX">0</span></div>
+        <div class="score score-o"><span>⭕ O</span><span id="scoreO">0</span></div>
+    </div>
+    <div class="status" id="statusMsg">Выберите игрока</div>
+    <div class="big-board" id="bigBoard"></div>
+    <div class="turn-hint" id="turnHint"></div>
+    <div class="rule-note" id="ruleNote">
+        📜 Правила: Первый ход — в любой квадрат. Победа — 5 любых квадратов ИЛИ 3 в ряд.
+        Выигранный квадрат остаётся за победителем навсегда, но ходить в него можно.
+    </div>
+    <button id="resetBtn">🔄 Новая игра</button>
+</div>
+
+<script>
+    // Состояние игры
+    let smallGrid = Array(9).fill().map(() => Array(9).fill(null));
+    let bigWinner = Array(9).fill(null);      // Кто выиграл большой квадрат (X/O) - НЕ МЕНЯЕТСЯ после победы
+    let bigLocked = Array(9).fill(false);     // Заблокирован ли большой квадрат (уже есть победитель)
+    let scores = [0, 0];
+    let currentPlayer = 0; // 0=X, 1=O
+    let nextBig = null;     // null означает, что можно ходить в любой квадрат (только первый ход)
+    let gameWinner = null;
+    let localPlayer = null; // 'X' или 'O' - кто управляет с этого компьютера
+    
+    const winLines = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+    const gridNames = ['ЮЗ', 'Ю', 'ЮВ', 'З', 'Ц', 'В', 'СЗ', 'С', 'СВ'];
+    
+    // Проверка, выигран ли большой квадрат (но только если он ещё не был выигран)
+    function checkAndSetSmallWin(bigIdx) {
+        // Если квадрат уже выигран, не меняем победителя
+        if (bigLocked[bigIdx]) return bigWinner[bigIdx];
+        
+        const grid = smallGrid[bigIdx];
+        for (let line of winLines) {
+            const [a,b,c] = line;
+            if (grid[a] && grid[a] === grid[b] && grid[a] === grid[c]) {
+                // Квадрат выигран! Запоминаем победителя и блокируем
+                bigWinner[bigIdx] = grid[a];
+                bigLocked[bigIdx] = true;
+                
+                // Увеличиваем счёт победителю
+                if (grid[a] === 'X') scores[0]++;
+                else scores[1]++;
+                
+                return grid[a];
+            }
+        }
+        return null;
+    }
+    
+    // Обновить все большие квадраты и счёт
+    function updateAllBigWinners() {
+        // Пересчитываем только незаблокированные квадраты
+        for (let i = 0; i < 9; i++) {
+            if (!bigLocked[i]) {
+                checkAndSetSmallWin(i);
+            }
+        }
+        
+        // Проверка победы в игре
+        // 1. Пять любых квадратов
+        if (scores[0] >= 5) gameWinner = 'X';
+        else if (scores[1] >= 5) gameWinner = 'O';
+        
+        // 2. Линия из трёх больших квадратов (если ещё нет победителя)
+        if (!gameWinner) {
+            for (let line of winLines) {
+                const [a,b,c] = line;
+                if (bigWinner[a] && bigWinner[a] === bigWinner[b] && bigWinner[a] === bigWinner[c]) {
+                    gameWinner = bigWinner[a];
+                    break;
+                }
+            }
+        }
+    }
+    
+    function makeMove(bigIdx, smallIdx) {
+        if (gameWinner) {
+            alert(`Игра окончена! Победил ${gameWinner}. Начните новую игру.`);
+            return;
+        }
+        if (localPlayer === null) {
+            alert("Сначала выберите, за кого вы играете (X или O)");
+            return;
+        }
+        if ((localPlayer === 'X' && currentPlayer !== 0) || (localPlayer === 'O' && currentPlayer !== 1)) {
+            alert("Сейчас не ваш ход!");
+            return;
+        }
+        
+        // Проверка: можно ходить в любой квадрат только если это первый ход (nextBig === null)
+        if (nextBig !== null && bigIdx !== nextBig) {
+            alert(`Сейчас можно ходить только в квадрат ${gridNames[nextBig]}`);
+            return;
+        }
+        
+        if (smallGrid[bigIdx][smallIdx] !== null) {
+            alert("Клетка занята!");
+            return;
+        }
+        
+        // Делаем ход
+        const mark = currentPlayer === 0 ? 'X' : 'O';
+        smallGrid[bigIdx][smallIdx] = mark;
+        
+        // Проверяем, выигран ли большой квадрат
+        checkAndSetSmallWin(bigIdx);
+        
+        // Обновляем счёт и проверяем победу
+        updateAllBigWinners();
+        
+        // Определяем следующий большой квадрат
+        nextBig = smallIdx;
+        
+        // Меняем игрока
+        currentPlayer = 1 - currentPlayer;
+        
+        render();
+    }
+    
+    function render() {
+        const boardDiv = document.getElementById('bigBoard');
+        boardDiv.innerHTML = '';
+        
+        const isMyTurn = localPlayer && ((localPlayer === 'X' && currentPlayer === 0) || (localPlayer === 'O' && currentPlayer === 1));
+        const activeBig = nextBig;
+        
+        for (let big = 0; big < 9; big++) {
+            const bigCell = document.createElement('div');
+            bigCell.className = 'big-cell';
+            if (bigWinner[big]) {
+                bigCell.classList.add('won');
+                bigCell.setAttribute('data-winner', bigWinner[big]);
+            }
+            
+            // Подсветка активного квадрата (зелёным)
+            const shouldHighlight = (!gameWinner && activeBig !== null && activeBig === big && isMyTurn);
+            if (shouldHighlight) {
+                bigCell.classList.add('highlight');
+            }
+            
+            const smallDiv = document.createElement('div');
+            smallDiv.className = 'small-board';
+            
+            for (let small = 0; small < 9; small++) {
+                const cell = document.createElement('div');
+                cell.className = 'cell';
+                const val = smallGrid[big][small];
+                if (val) {
+                    cell.classList.add('taken', val === 'X' ? 'x' : 'o');
+                    cell.textContent = val;
+                } else {
+                    cell.textContent = '';
+                    // Можно ли кликнуть по этой клетке?
+                    let canClick = false;
+                    if (!gameWinner && isMyTurn) {
+                        if (activeBig === null) {
+                            // Первый ход: можно кликать в ЛЮБОЙ пустой клетке
+                            canClick = true;
+                        } else if (big === activeBig) {
+                            // Обычный ход: только в активном квадрате
+                            canClick = true;
+                        }
+                    }
+                    if (canClick) {
+                        cell.onclick = (function(b, s) { return () => makeMove(b, s); })(big, small);
+                    }
+                }
+                smallDiv.appendChild(cell);
+            }
+            
+            bigCell.appendChild(smallDiv);
+            boardDiv.appendChild(bigCell);
+        }
+        
+        document.getElementById('scoreX').textContent = scores[0];
+        document.getElementById('scoreO').textContent = scores[1];
+        
+        const statusDiv = document.getElementById('statusMsg');
+        if (gameWinner) {
+            statusDiv.innerHTML = `🏆 ПОБЕДИЛ ${gameWinner} 🏆`;
+        } else if (localPlayer === null) {
+            statusDiv.innerHTML = `👥 Нажмите на карточку игрока, за которого будете играть`;
+        } else {
+            if (isMyTurn) {
+                if (nextBig === null) {
+                    statusDiv.innerHTML = `🎯 Ваш ход (${localPlayer}) — первый ход! Можете ходить в ЛЮБОЙ квадрат`;
+                } else {
+                    statusDiv.innerHTML = `🎯 Ваш ход (${localPlayer}) — ходите в ЗЕЛЁНЫЙ квадрат (${gridNames[nextBig]})`;
+                }
+            } else {
+                statusDiv.innerHTML = `⏳ Ход ${currentPlayer === 0 ? 'X' : 'O'}... Передайте мышь другому игроку`;
+            }
+        }
+        
+        const hintDiv = document.getElementById('turnHint');
+        if (!gameWinner && localPlayer) {
+            if (nextBig === null) {
+                hintDiv.innerHTML = `✨ Первый ход! Можно выбрать любой квадрат ✨`;
+            } else {
+                hintDiv.innerHTML = `📌 Следующий квадрат: ${gridNames[nextBig]}`;
+            }
+        } else {
+            hintDiv.innerHTML = '';
+        }
+    }
+    
+    function setPlayer(player) {
+        localPlayer = player;
+        // Подсветка активного игрока
+        document.getElementById('playerXBtn').classList.remove('player-active');
+        document.getElementById('playerOBtn').classList.remove('player-active');
+        if (player === 'X') {
+            document.getElementById('playerXBtn').classList.add('player-active');
+        } else if (player === 'O') {
+            document.getElementById('playerOBtn').classList.add('player-active');
+        }
+        render();
+    }
+    
+    function resetGame() {
+        smallGrid = Array(9).fill().map(() => Array(9).fill(null));
+        bigWinner = Array(9).fill(null);
+        bigLocked = Array(9).fill(false);
+        scores = [0, 0];
+        currentPlayer = 0;
+        nextBig = null;  // null означает, что первый ход может быть в любой квадрат
+        gameWinner = null;
+        render();
+    }
+    
+    document.getElementById('playerXBtn').onclick = () => setPlayer('X');
+    document.getElementById('playerOBtn').onclick = () => setPlayer('O');
+    document.getElementById('resetBtn').onclick = resetGame;
+    
+    resetGame();
+</script>
+</body>
+</html>
