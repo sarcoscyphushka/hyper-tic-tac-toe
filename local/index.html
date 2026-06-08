@@ -53,13 +53,13 @@
             gap: 16px;
             margin-bottom: 24px;
         }
-        .score-card {
+       .score-card {
             flex: 1;
             text-align: center;
-            padding: 12px;
+            padding: 12px 8px;
             border-radius: 20px;
             font-weight: bold;
-        }
+         }
         .score-x {
             background: #E3F2FD;
             color: #0D47A1;
@@ -68,14 +68,22 @@
             background: #FFEBEE;
             color: #B71C1C;
         }
-        .score-symbol {
-            font-size: 1.8em;
+       .score-symbol {
+            font-size: 1.1em;
+            font-weight: bold;
+            display: block;
+            margin-bottom: 6px;
+        }
+       .score-label {
+            font-size: 0.8em;
+            opacity: 0.7;
             display: block;
         }
-        .score-value {
+       .score-value {
             font-size: 2.2em;
-            display: block;
+            font-weight: bold;
             line-height: 1;
+            margin-top: 4px;
         }
         /* Статус */
         .status-bar {
@@ -247,8 +255,16 @@
 <div class="app-container">
     <div class="game-area">
         <div class="scores">
-            <div class="score-card score-x"><span class="score-symbol">❌ X</span><span class="score-value" id="scoreX">0</span></div>
-            <div class="score-card score-o"><span class="score-symbol">⭕ O</span><span class="score-value" id="scoreO">0</span></div>
+           <div class="score-card score-x">
+                <div class="score-symbol">❌ КРЕСТИКИ</div>
+                <div class="score-label">Счёт:</div>
+                <div class="score-value" id="scoreX">0</div>
+           </div>
+           <div class="score-card score-o">
+                <div class="score-symbol">⭕ НОЛИКИ</div>
+                <div class="score-label">Счёт:</div>
+                <div class="score-value" id="scoreO">0</div>
+           </div>
         </div>
         <div class="status-bar" id="statusMsg">Ход: X</div>
         <div id="bigGrid" class="big-grid"></div>
