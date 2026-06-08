@@ -128,13 +128,25 @@
             font-size: 1.3em;
             font-weight: bold;
             border-radius: 6px;
-            cursor: pointer;
+            cursor: default;
             transition: 0.05s linear;
         }
-        .cell.x { color: #2196F3; background: white; }
-        .cell.o { color: #F44336; background: white; }
-        .cell.taken { cursor: not-allowed; }
-        .cell:active:not(.taken) { transform: scale(0.96); }
+    .cell.x { color: #2196F3; background: white; }
+    .cell.o { color: #F44336; background: white; }
+    .cell.taken { cursor: not-allowed; }
+/* Подсветка только для доступных клеток (кликабельных) */
+    .cell:not(.taken):hover {
+        background: #e0e0e0;
+        transform: scale(0.96);
+        cursor: pointer;
+    }
+    .cell:active:not(.taken) { transform: scale(0.96); }
+/* Если клетка не кликабельна (но и не taken) — нет подсветки и курсор по умолчанию */
+    .cell:not(.taken):not([style*="cursor: pointer"]):hover {
+        background: white;
+        transform: none;
+        cursor: default;
+    }
         
         /* Слой для победного символа поверх большого квадрата */
         .big-cell {
