@@ -457,20 +457,34 @@
         updateNotationUI();
     }
 
-    function updateNotationUI() {
-        const container = document.getElementById('notationList');
-        container.innerHTML = '';
-        if (moveHistory.length === 0) {
-            container.innerHTML = '<li style="color: #aaa;">— Ходы будут отображаться здесь —</li>';
-            return;
-        }
-        moveHistory.forEach((move, idx) => {
-            const li = document.createElement('li');
-            li.textContent = `${idx+1}. ${move}`;
-            container.appendChild(li);
-        });
-        container.scrollTop = container.scrollHeight;
+   function updateNotationUI() {
+    const container = document.getElementById('notationList');
+    container.innerHTML = '';
+    if (moveHistory.length === 0) {
+        container.innerHTML = '<li style="color: #aaa;">— Ходы будут здесь —</li>';
+        return;
     }
+    moveHistory.forEach((move, idx) => {
+        const li = document.createElement('li');
+        li.textContent = `${idx+1}. ${move}`;
+        container.appendChild(li);
+    });
+    container.scrollTop = container.scrollHeight;
+    
+    // ЛОГИКА СКРЫТИЯ ВЫСОКОЙ КАРТИНКИ
+    const tallEast = document.querySelector('.tall-east-decor');
+    if (tallEast) {
+        // Проверяем, превышает ли содержимое нотации видимую область
+        const isOverflowing = container.scrollHeight > container.clientHeight;
+        if (isOverflowing || moveHistory.length >= 10) {
+            tallEast.style.opacity = '0';
+            tallEast.style.visibility = 'hidden'; // чтобы не занимала место
+        } else {
+            tallEast.style.opacity = '1';
+            tallEast.style.visibility = 'visible';
+        }
+    }
+}
 
     function clearNotation() {
         moveHistory = [];
