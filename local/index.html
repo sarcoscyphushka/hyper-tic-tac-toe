@@ -314,6 +314,20 @@
 .corner-image:hover {
     opacity: 1;
 }
+
+.east-decor {
+    position: absolute;
+    right: -50px;      /* чтобы не наезжала на подпись, можно подобрать */
+    top: 60%;          /* чуть ниже подписи "ВОСТОК" */
+    transform: translateY(-50%);
+    width: 60px;       /* подберите размер под вашу картинку */
+    height: auto;
+    z-index: 10;
+    pointer-events: none;  /* чтобы картинка не мешала кликам по полю */
+    background: transparent;
+    border: none;
+    box-shadow: none;
+}
         
     </style>
 </head>
@@ -339,6 +353,7 @@
             <div class="compass-label label-south">ЮГ</div>
             <div class="compass-label label-west">ЗАПАД</div>
             <div class="compass-label label-east">ВОСТОК</div>
+            <img src="penza.png" alt="декор" class="east-decor">
         </div>
         <div class="turn-hint" id="turnHint"></div>
         <button class="reset-btn" id="resetBtn">🔄 Новая игра</button>
