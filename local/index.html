@@ -2,13 +2,13 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Гипер-крестики-нолики — с нотацией</title>
+    <title>Гипер-крестики-нолики — с нотацией направлений</title>
     <style>
         * { user-select: none; box-sizing: border-box; }
         body { font-family: Arial, sans-serif; background: linear-gradient(135deg, #1e3c72, #2a5298); min-height: 100vh; margin: 0; padding: 20px; display: flex; justify-content: center; align-items: center; }
         .container { max-width: 1100px; width: 100%; display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; }
         .game-box { background: white; border-radius: 20px; padding: 20px; flex: 2; min-width: 300px; }
-        .notation-box { background: white; border-radius: 20px; padding: 20px; flex: 1; min-width: 200px; display: flex; flex-direction: column; }
+        .notation-box { background: white; border-radius: 20px; padding: 20px; flex: 1; min-width: 220px; display: flex; flex-direction: column; }
         .status { background: #f0f0f0; padding: 12px; border-radius: 12px; text-align: center; font-size: 1.2em; font-weight: bold; margin-bottom: 15px; }
         .scores { display: flex; gap: 15px; margin-bottom: 20px; }
         .score { flex: 1; text-align: center; padding: 10px; border-radius: 12px; font-weight: bold; }
@@ -19,9 +19,43 @@
         .big-board { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; background: #333; padding: 8px; border-radius: 12px; }
         .big-cell { background: white; border-radius: 8px; padding: 6px; position: relative; aspect-ratio: 1; }
         .big-cell.highlight { background: #c8e6c9; box-shadow: 0 0 0 2px #2e7d32; }
-        .big-cell.won::after { content: attr(data-winner); position: absolute; top: 50%; left: 50%; font-size: 3.5em; font-weight: bold; transform: translate(-50%, -50%); opacity: 0.3; pointer-events: none; }
-        .small-board { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; background: #ddd; padding: 3px; border-radius: 5px; height: 100%; }
-        .cell { background: white; aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-size: 1.2em; font-weight: bold; border-radius: 4px; cursor: pointer; transition: 0.1s; }
+        /* Победный символ — абсолютное позиционирование, не влияет на размеры */
+        .big-cell.won::after {
+            content: attr(data-winner);
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            font-size: 3.5em;
+            font-weight: bold;
+            transform: translate(-50%, -50%);
+            opacity: 0.3;
+            pointer-events: none;
+            z-index: 1;
+            line-height: 1;
+        }
+        .small-board {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 3px;
+            background: #ddd;
+            padding: 3px;
+            border-radius: 5px;
+            height: 100%;
+            position: relative;
+            z-index: 2;
+        }
+        .cell {
+            background: white;
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2em;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: 0.1s;
+        }
         .cell.taken { cursor: not-allowed; opacity: 0.6; }
         .cell.x { color: #2196F3; }
         .cell.o { color: #F44336; }
@@ -61,24 +95,28 @@
     let smallGrid = Array(9).fill().map(() => Array(9).fill(null));
     let bigWinner = Array(9).fill(null);
     let bigLocked = Array(9).fill(false);
-    let scores = [0, 0];  // X, O
+    let scores = [0, 0];
     let currentPlayer = 0; // 0 = X, 1 = O
-    let nextBig = null;    // null = первый ход (можно любой)
+    let nextBig = null;
     let gameWinner = null;
     
-    let moveHistory = [];   // массив строк нотации
+    let moveHistory = []; // массив строк нотации
     
     const winLines = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
     const gridNames = ['ЮЗ', 'Ю', 'ЮВ', 'З', 'Ц', 'В', 'СЗ', 'С', 'СВ'];
     
+    // Преобразование индекса маленькой клетки (0-8) в координаты (строка, колонка) от 1 до 3
+    function smallIdxToCoord(idx) {
+        return `${Math.floor(idx / 3) + 1},${(idx % 3) + 1}`;
+    }
+    
     // ========== НОТАЦИЯ ==========
-    function addNotation(bigIdx, smallIdx, player) {
-        const bigName = gridNames[bigIdx];
-        // маленькие клетки нумеруем от 0 до 8, переведём в координаты 1..3
-        const row = Math.floor(smallIdx / 3) + 1;
-        const col = (smallIdx % 3) + 1;
-        const smallCoord = `(${row},${col})`;
-        const notation = `${player}: ${bigName} ${smallCoord}`;
+    function addNotation(bigIdx, smallIdx, player, nextBigIdx) {
+        const fromBig = gridNames[bigIdx];
+        const smallCoord = smallIdxToCoord(smallIdx);
+        const toBig = (nextBigIdx !== null) ? gridNames[nextBigIdx] : "?";
+        // Формат: "X: ЮЗ (2,3) → Ц"
+        const notation = `${player}: ${fromBig} (${smallCoord}) → ${toBig}`;
         moveHistory.push(notation);
         updateNotationList();
     }
@@ -143,7 +181,6 @@
             alert(`Игра окончена! Победил ${gameWinner}. Начните новую игру.`);
             return;
         }
-        // Проверка: можно ли ходить в этот большой квадрат
         if (nextBig !== null && bigIdx !== nextBig) {
             alert(`Сейчас можно ходить только в квадрат ${gridNames[nextBig]}`);
             return;
@@ -156,15 +193,18 @@
         const mark = currentPlayer === 0 ? 'X' : 'O';
         smallGrid[bigIdx][smallIdx] = mark;
         
-        // Запись хода в нотацию
-        addNotation(bigIdx, smallIdx, mark);
+        // Определяем следующий большой квадрат ДО проверки побед (чтобы нотация была точной)
+        const newNextBig = smallIdx;
         
-        // Проверка победы в большом квадрате
+        // Проверка победы в большом квадрате (может изменить bigLocked и счёт)
         checkAndSetSmallWin(bigIdx);
         updateGame();
         
-        // Определяем следующий большой квадрат
-        nextBig = smallIdx;
+        // Запись хода в нотацию (передаём новый следующий квадрат)
+        addNotation(bigIdx, smallIdx, mark, newNextBig);
+        
+        // Обновляем следующий квадрат
+        nextBig = newNextBig;
         
         // Меняем игрока
         currentPlayer = 1 - currentPlayer;
@@ -177,8 +217,6 @@
         const boardDiv = document.getElementById('bigBoard');
         boardDiv.innerHTML = '';
         
-        const isMyTurn = true; // в локальной версии оба игрока могут кликать, но проверка nextBig ограничит
-        
         for (let big = 0; big < 9; big++) {
             const bigDiv = document.createElement('div');
             bigDiv.className = 'big-cell';
@@ -186,7 +224,7 @@
                 bigDiv.classList.add('won');
                 bigDiv.setAttribute('data-winner', bigWinner[big]);
             }
-            // Подсветка активного квадрата (зелёным)
+            // Подсветка активного квадрата
             if (!gameWinner && nextBig !== null && nextBig === big) {
                 bigDiv.classList.add('highlight');
             }
@@ -202,10 +240,9 @@
                     cell.textContent = val;
                 } else {
                     cell.textContent = '';
-                    // Разрешаем клик, если игра не окончена и квадрат соответствует следующему (или первый ход)
                     let canClick = false;
                     if (!gameWinner) {
-                        if (nextBig === null) canClick = true; // первый ход в любой квадрат
+                        if (nextBig === null) canClick = true;
                         else if (big === nextBig) canClick = true;
                     }
                     if (canClick) {
