@@ -2,189 +2,50 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Гипер-крестики-нолики — правильная нотация</title>
+    <title>Гипер-крестики-нолики — с нотацией</title>
     <style>
-        * {
-            user-select: none;
-            box-sizing: border-box;
-        }
-        body {
-            font-family: Arial, sans-serif;
-            background: linear-gradient(135deg, #1e3c72, #2a5298);
-            min-height: 100vh;
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        .container {
-            max-width: 1100px;
-            width: 100%;
-            display: flex;
-            gap: 20px;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-        .game-box {
-            background: white;
-            border-radius: 20px;
-            padding: 20px;
-            flex: 2;
-            min-width: 300px;
-        }
-        .notation-box {
-            background: white;
-            border-radius: 20px;
-            padding: 20px;
-            flex: 1;
-            min-width: 220px;
-            display: flex;
-            flex-direction: column;
-            max-height: 80vh;
-        }
-        .status {
-            background: #f0f0f0;
-            padding: 12px;
-            border-radius: 12px;
-            text-align: center;
-            font-size: 1.2em;
-            font-weight: bold;
-            margin-bottom: 15px;
-        }
-        .scores {
-            display: flex;
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-        .score {
-            flex: 1;
-            text-align: center;
-            padding: 10px;
-            border-radius: 12px;
-            font-weight: bold;
-        }
+        * { user-select: none; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background: linear-gradient(135deg, #1e3c72, #2a5298); min-height: 100vh; margin: 0; padding: 20px; display: flex; justify-content: center; align-items: center; }
+        .container { max-width: 1100px; width: 100%; display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; }
+        .game-box { background: white; border-radius: 20px; padding: 20px; flex: 2; min-width: 300px; }
+        .notation-box { background: white; border-radius: 20px; padding: 20px; flex: 1; min-width: 200px; display: flex; flex-direction: column; }
+        .status { background: #f0f0f0; padding: 12px; border-radius: 12px; text-align: center; font-size: 1.2em; font-weight: bold; margin-bottom: 15px; }
+        .scores { display: flex; gap: 15px; margin-bottom: 20px; }
+        .score { flex: 1; text-align: center; padding: 10px; border-radius: 12px; font-weight: bold; }
         .score-x { background: #E3F2FD; color: #1976D2; }
         .score-o { background: #FFEBEE; color: #D32F2F; }
         .score span:first-child { font-size: 1.8em; display: block; }
         .score span:last-child { font-size: 2em; }
-        .big-board {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 8px;
-            background: #333;
-            padding: 8px;
-            border-radius: 12px;
-        }
-        .big-cell {
-            background: white;
-            border-radius: 8px;
-            padding: 6px;
-            position: relative;
-            aspect-ratio: 1;
-            /* фикс для стабильности размеров */
-            min-width: 0;
-            min-height: 0;
-        }
-        .big-cell.highlight {
-            background: #c8e6c9;
-            box-shadow: 0 0 0 2px #2e7d32;
-        }
-        .big-cell.won {
-            position: relative;
-        }
+        .big-board { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; background: #333; padding: 8px; border-radius: 12px; }
+        .big-cell { background: white; border-radius: 8px; padding: 6px; position: relative; aspect-ratio: 1; }
+        .big-cell.highlight { background: #c8e6c9; box-shadow: 0 0 0 2px #2e7d32; }
+        /* Стиль для победного символа поверх большого квадрата */
         .big-cell.won::after {
             content: attr(data-winner);
             position: absolute;
             top: 50%;
             left: 50%;
-            font-size: 3.5em;
-            font-weight: bold;
             transform: translate(-50%, -50%);
-            opacity: 0.3;
-            pointer-events: none;
-            z-index: 1;
-            line-height: 1;
-        }
-        .small-board {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 3px;
-            background: #ddd;
-            padding: 3px;
-            border-radius: 5px;
-            height: 100%;
-            position: relative;
-            z-index: 2;
-        }
-        .cell {
-            background: white;
-            aspect-ratio: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.2em;
+            font-size: 4em;
             font-weight: bold;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: 0.1s;
+            opacity: 0.35;
+            pointer-events: none;
+            z-index: 10;
+            font-family: Arial, sans-serif;
         }
-        .cell.taken {
-            cursor: not-allowed;
-            opacity: 0.6;
-        }
+        .small-board { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; background: #ddd; padding: 3px; border-radius: 5px; height: 100%; position: relative; z-index: 2; }
+        .cell { background: white; aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-size: 1.2em; font-weight: bold; border-radius: 4px; cursor: pointer; transition: 0.1s; }
+        .cell.taken { cursor: not-allowed; opacity: 0.6; }
         .cell.x { color: #2196F3; }
         .cell.o { color: #F44336; }
-        .cell:hover:not(.taken) {
-            background: #e0e0e0;
-            transform: scale(0.95);
-        }
-        button {
-            margin-top: 20px;
-            width: 100%;
-            padding: 12px;
-            background: #667eea;
-            color: white;
-            border: none;
-            border-radius: 30px;
-            font-size: 1.1em;
-            cursor: pointer;
-        }
-        .turn-hint {
-            text-align: center;
-            margin-top: 10px;
-            font-size: 0.9em;
-            color: #666;
-        }
-        .notation-title {
-            font-weight: bold;
-            margin-bottom: 10px;
-            text-align: center;
-        }
-        .notation-list {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-            overflow-y: auto;
-            flex-grow: 1;
-            font-family: monospace;
-            font-size: 0.9em;
-        }
-        .notation-list li {
-            padding: 5px;
-            border-bottom: 1px solid #eee;
-        }
-        .current-turn {
-            background: #c8e6c9;
-            padding: 5px;
-            border-radius: 8px;
-            margin-bottom: 10px;
-            text-align: center;
-            font-weight: bold;
-        }
-        @media (max-width: 700px) {
-            .container { flex-direction: column; }
-        }
+        .cell:hover:not(.taken) { background: #e0e0e0; transform: scale(0.95); }
+        button { margin-top: 20px; width: 100%; padding: 12px; background: #667eea; color: white; border: none; border-radius: 30px; font-size: 1.1em; cursor: pointer; }
+        .turn-hint { text-align: center; margin-top: 10px; font-size: 0.9em; color: #666; }
+        .notation-title { font-weight: bold; margin-bottom: 10px; text-align: center; }
+        .notation-list { list-style: none; padding: 0; margin: 0; overflow-y: auto; max-height: 400px; font-family: monospace; font-size: 0.9em; }
+        .notation-list li { padding: 5px; border-bottom: 1px solid #eee; }
+        .current-turn { background: #c8e6c9; padding: 5px; border-radius: 8px; margin-bottom: 10px; text-align: center; font-weight: bold; }
+        @media (max-width: 700px) { .container { flex-direction: column; } }
     </style>
 </head>
 <body>
@@ -213,21 +74,22 @@
     let smallGrid = Array(9).fill().map(() => Array(9).fill(null));
     let bigWinner = Array(9).fill(null);
     let bigLocked = Array(9).fill(false);
-    let scores = [0, 0];  // X, O
-    let currentPlayer = 0; // 0 = X, 1 = O
-    let nextBig = null;    // null = первый ход (можно любой)
+    let scores = [0, 0];
+    let currentPlayer = 0;
+    let nextBig = null;
     let gameWinner = null;
     
-    let moveHistory = [];   // массив строк нотации формата "X: Ц → ЮВ"
+    let moveHistory = [];
     
     const winLines = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
     const gridNames = ['ЮЗ', 'Ю', 'ЮВ', 'З', 'Ц', 'В', 'СЗ', 'С', 'СВ'];
     
-    // ========== НОТАЦИЯ (без координат маленькой клетки) ==========
-    function addNotation(bigIdx, nextBigIdx, player) {
+    // ========== НОТАЦИЯ ==========
+    function addNotation(bigIdx, smallIdx, player) {
         const bigName = gridNames[bigIdx];
-        const nextName = (nextBigIdx !== null) ? gridNames[nextBigIdx] : "?";
-        const notation = `${player}: ${bigName} → ${nextName}`;
+        const nextBigName = gridNames[smallIdx];
+        // Формат: X: Ц → ЮВ  (без координат)
+        const notation = `${player}: ${bigName} → ${nextBigName}`;
         moveHistory.push(notation);
         updateNotationList();
     }
@@ -292,7 +154,6 @@
             alert(`Игра окончена! Победил ${gameWinner}. Начните новую игру.`);
             return;
         }
-        // Проверка: можно ли ходить в этот большой квадрат
         if (nextBig !== null && bigIdx !== nextBig) {
             alert(`Сейчас можно ходить только в квадрат ${gridNames[nextBig]}`);
             return;
@@ -305,26 +166,18 @@
         const mark = currentPlayer === 0 ? 'X' : 'O';
         smallGrid[bigIdx][smallIdx] = mark;
         
-        // Определяем следующий квадрат ДО записи нотации (чтобы знать, куда отправляем)
-        const newNextBig = smallIdx;
+        addNotation(bigIdx, smallIdx, mark);
         
-        // Запись хода в нотацию: "X: Ц → ЮВ"
-        addNotation(bigIdx, newNextBig, mark);
-        
-        // Проверка победы в большом квадрате
         checkAndSetSmallWin(bigIdx);
         updateGame();
         
-        // Обновляем следующий большой квадрат
-        nextBig = newNextBig;
-        
-        // Меняем игрока
+        nextBig = smallIdx;
         currentPlayer = 1 - currentPlayer;
         
         render();
     }
     
-    // ========== ОТРИСОВКА (фикс дёрганья) ==========
+    // ========== ОТРИСОВКА ==========
     function render() {
         const boardDiv = document.getElementById('bigBoard');
         boardDiv.innerHTML = '';
@@ -332,10 +185,13 @@
         for (let big = 0; big < 9; big++) {
             const bigDiv = document.createElement('div');
             bigDiv.className = 'big-cell';
+            
+            // Если большой квадрат выигран — добавляем класс и атрибут с победителем
             if (bigWinner[big]) {
                 bigDiv.classList.add('won');
                 bigDiv.setAttribute('data-winner', bigWinner[big]);
             }
+            
             // Подсветка активного квадрата
             if (!gameWinner && nextBig !== null && nextBig === big) {
                 bigDiv.classList.add('highlight');
@@ -343,6 +199,7 @@
             
             const smallDiv = document.createElement('div');
             smallDiv.className = 'small-board';
+            
             for (let small = 0; small < 9; small++) {
                 const cell = document.createElement('div');
                 cell.className = 'cell';
@@ -354,7 +211,7 @@
                     cell.textContent = '';
                     let canClick = false;
                     if (!gameWinner) {
-                        if (nextBig === null) canClick = true; // первый ход
+                        if (nextBig === null) canClick = true;
                         else if (big === nextBig) canClick = true;
                     }
                     if (canClick) {
@@ -393,7 +250,6 @@
         }
     }
     
-    // ========== НОВАЯ ИГРА ==========
     function resetGame() {
         smallGrid = Array(9).fill().map(() => Array(9).fill(null));
         bigWinner = Array(9).fill(null);
@@ -407,7 +263,6 @@
     }
     
     document.getElementById('resetBtn').onclick = resetGame;
-    
     resetGame();
 </script>
 </body>
