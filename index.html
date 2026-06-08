@@ -170,6 +170,7 @@
     
     function render() {
         const boardDiv = document.getElementById('bigBoard');
+        if (!boardDiv) return;
         boardDiv.innerHTML = '';
         const isMyTurn = localPlayer && ((localPlayer === 'X' && currentPlayer === 0) || (localPlayer === 'O' && currentPlayer === 1));
         
@@ -225,7 +226,7 @@
         currentPlayer = 0;
         nextBig = null;
         gameWinner = null;
-        sendGameState();
+        if (conn && conn.open) sendGameState();
         render();
     }
     
@@ -234,16 +235,27 @@
         localPlayer = 'X';
         document.getElementById('connectionPanel').style.display = 'none';
         document.getElementById('gameBox').style.display = 'block';
+        document.getElementById('statusMsg').innerHTML = 'Создание комнаты...';
         
-        peer = new Peer();
+        // Используем надежный сервер PeerJS
+        peer = new Peer(undefined, {
+            host: '0.peerjs.com',
+            port: 443,
+            path: '/',
+            secure: true
+        });
+        
         peer.on('open', (id) => {
             myId = id;
             document.getElementById('roomInfo').innerHTML = `🔑 Ваш ID: <strong style="font-size:1.3em">${id}</strong><br><small>Отправьте его другу для подключения</small>`;
+            document.getElementById('statusMsg').innerHTML = 'Ожидание подключения...';
             render();
         });
+        
         peer.on('connection', (connection) => {
             conn = connection;
             conn.on('open', () => {
+                document.getElementById('statusMsg').innerHTML = 'Соединение установлено!';
                 sendGameState();
                 render();
             });
@@ -251,7 +263,12 @@
                 if (data.type === 'state') loadRemoteState(data.data);
             });
         });
-        peer.on('error', (err) => { console.error(err); alert('Ошибка: ' + err.type); });
+        
+        peer.on('error', (err) => {
+            console.error('Peer error:', err);
+            document.getElementById('statusMsg').innerHTML = 'Ошибка подключения. Попробуйте обновить страницу.';
+            alert('Не удалось создать комнату. Возможно, сервер PeerJS временно недоступен. Попробуйте через 5 минут.');
+        });
     }
     
     function connectToPeer() {
@@ -262,19 +279,37 @@
         document.getElementById('connectionPanel').style.display = 'none';
         document.getElementById('gameBox').style.display = 'block';
         document.getElementById('roomInfo').innerHTML = `🔗 Подключение к ${targetId}...`;
+        document.getElementById('statusMsg').innerHTML = 'Подключение...';
         
-        peer = new Peer();
+        peer = new Peer(undefined, {
+            host: '0.peerjs.com',
+            port: 443,
+            path: '/',
+            secure: true
+        });
+        
         peer.on('open', () => {
             conn = peer.connect(targetId);
             conn.on('open', () => {
                 document.getElementById('roomInfo').innerHTML = `🔗 Подключено к ${targetId}`;
+                document.getElementById('statusMsg').innerHTML = 'Соединение установлено!';
                 render();
             });
             conn.on('data', (data) => {
                 if (data.type === 'state') loadRemoteState(data.data);
             });
+            conn.on('error', (err) => {
+                console.error(err);
+                document.getElementById('statusMsg').innerHTML = 'Ошибка соединения';
+                alert('Не удалось подключиться. Проверьте ID и попробуйте снова.');
+            });
         });
-        peer.on('error', (err) => { console.error(err); alert('Ошибка подключения: ' + err.type); });
+        
+        peer.on('error', (err) => {
+            console.error(err);
+            document.getElementById('statusMsg').innerHTML = 'Ошибка подключения';
+            alert('Ошибка подключения к серверу. Попробуйте обновить страницу.');
+        });
     }
     
     document.getElementById('createBtn').onclick = createGame;
