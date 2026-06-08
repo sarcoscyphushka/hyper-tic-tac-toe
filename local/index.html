@@ -626,17 +626,26 @@
     }
 
     // ----- НОВАЯ ИГРА -----
-    function resetGame() {
-        smallGrid = Array(9).fill().map(() => Array(9).fill(null));
-        bigWinner = Array(9).fill(null);
-        bigLocked = Array(9).fill(false);
-        scores = [0, 0];
-        currentPlayer = 0;
-        nextBig = null;
-        gameWinner = null;
-        clearNotation();
-        renderGame();
+   function resetGame() {
+    smallGrid = Array(9).fill().map(() => Array(9).fill(null));
+    bigWinner = Array(9).fill(null);
+    bigLocked = Array(9).fill(false);
+    scores = [0, 0];
+    currentPlayer = 0;
+    nextBig = null;
+    gameWinner = null;
+    clearNotation();
+    renderGame();
+    
+    // ВОЗВРАЩАЕМ ВЫСОКУЮ КАРТИНКУ (если она была скрыта)
+    const tallEast = document.querySelector('.tall-east-decor');
+    if (tallEast) {
+        tallEast.style.opacity = '1';
+        tallEast.style.visibility = 'visible';
+        // если использовали display: none, то:
+        // tallEast.style.display = 'block';
     }
+}
 
     // ----- ЗАПУСК -----
     document.getElementById('resetBtn').onclick = resetGame;
