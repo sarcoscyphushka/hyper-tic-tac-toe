@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+    <!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
@@ -105,10 +105,18 @@
             transition: all 0.1s ease;
         }
         /* Подсветка активного квадрата */
-        .big-cell.highlight {
-            background: #c8e6c9;
-            box-shadow: 0 0 0 3px #2e7d32;
+       .big-cell.highlight {
+            background: #a5d6a7;
+            box-shadow: 0 0 0 4px #1b5e20, 0 0 0 8px rgba(27, 94, 32, 0.3);
+            animation: pulse 1.2s ease-in-out infinite;
         }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 4px #1b5e20, 0 0 0 8px rgba(27, 94, 32, 0.3); }
+            50% { box-shadow: 0 0 0 4px #2e7d32, 0 0 0 12px rgba(46, 125, 50, 0.5); }
+            100% { box-shadow: 0 0 0 4px #1b5e20, 0 0 0 8px rgba(27, 94, 32, 0.3); }
+        }
+        
         /* Сетка маленьких клеток */
         .small-grid {
             display: grid;
