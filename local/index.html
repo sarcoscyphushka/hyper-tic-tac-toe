@@ -210,6 +210,56 @@
             background: #5a67d8;
             transform: scale(0.98);
         }
+
+        /* Контейнер для поля с подписями */
+        .game-field-wrapper {
+            position: relative;
+            margin: 20px 0;
+        }
+
+/* Общие стили для подписей */
+        .compass-label {
+            position: absolute;
+            font-weight: bold;
+            color: #2c3e50;
+            font-size: 0.9rem;
+            letter-spacing: 1px;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 4px 8px;
+            border-radius: 20px;
+            backdrop-filter: blur(2px);
+            white-space: nowrap;
+        }
+
+/* Север — сверху по центру */
+        .label-north {
+            top: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+/* Юг — снизу по центру */
+        .label-south {
+            bottom: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+/* Запад — слева, вертикально снизу вверх */
+        .label-west {
+            left: -40px;
+            top: 50%;
+            transform: translateY(-50%) rotate(-90deg);
+            transform-origin: center;
+        }
+
+/* Восток — справа, вертикально сверху вниз */
+        .label-east {
+            right: -40px;
+            top: 50%;
+            transform: translateY(-50%) rotate(90deg);
+            transform-origin: center;
+        }
         .turn-hint {
             text-align: center;
             margin-top: 16px;
@@ -272,7 +322,13 @@
            </div>
         </div>
         <div class="status-bar" id="statusMsg">Ход: X</div>
-        <div id="bigGrid" class="big-grid"></div>
+        <div class="game-field-wrapper">
+            <div id="bigGrid" class="big-grid"></div>
+            <div class="compass-label label-north">СЕВЕР</div>
+            <div class="compass-label label-south">ЮГ</div>
+            <div class="compass-label label-west">ЗАПАД</div>
+            <div class="compass-label label-east">ВОСТОК</div>
+        </div>
         <div class="turn-hint" id="turnHint"></div>
         <button class="reset-btn" id="resetBtn">🔄 Новая игра</button>
     </div>
