@@ -105,7 +105,7 @@
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 10px;
-            background: #00A550;
+            background: #8BC34A;
             padding: 10px;
             border-radius: 16px;
         }
@@ -120,7 +120,7 @@
 
 /* Угловые квадраты (СЗ, СВ, ЮЗ, ЮВ) — оранжевые */
 .big-cell.corner {
-    background: #FF6D00
+    background: #FFD700;
 }
 
 /* Боковые квадраты (С, В, Ю, З) — красные */
@@ -172,11 +172,12 @@
     .cell.o { color: #F44336; background: white; }
     .cell.taken { cursor: not-allowed; }
 /* Подсветка только для доступных клеток (кликабельных) */
-    .cell:not(.taken):hover {
-        background: #e0e0e0;
-        transform: scale(0.96);
-        cursor: pointer;
-    }
+   .cell:not(.taken):hover {
+    background: #8BC34A;
+    opacity: 0.7;
+    transform: scale(0.96);
+    cursor: pointer;
+}
     .cell:active:not(.taken) { transform: scale(0.96); }
 /* Если клетка не кликабельна (но и не taken) — нет подсветки и курсор по умолчанию */
     .cell:not(.taken):not([style*="cursor: pointer"]):hover {
