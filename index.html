@@ -2,16 +2,14 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Гипер-крестики-нолики - Онлайн</title>
+    <title>Гипер-крестики-нолики — синхронизация через Google Диск</title>
     <style>
         * { user-select: none; box-sizing: border-box; }
         body { font-family: Arial, sans-serif; background: linear-gradient(135deg, #1e3c72, #2a5298); min-height: 100vh; margin: 0; padding: 20px; display: flex; justify-content: center; align-items: center; }
         .container { max-width: 900px; width: 100%; }
         .panel { background: white; border-radius: 20px; padding: 30px; text-align: center; margin-bottom: 20px; }
-        .panel input { padding: 12px; font-size: 1.1em; width: 250px; text-align: center; border: 2px solid #ddd; border-radius: 10px; margin: 10px; }
         .panel button { padding: 12px 25px; font-size: 1.1em; background: #667eea; color: white; border: none; border-radius: 10px; cursor: pointer; margin: 5px; }
         .game-box { background: white; border-radius: 20px; padding: 20px; display: none; }
-        .room-info { background: #4CAF50; color: white; padding: 10px; border-radius: 10px; text-align: center; margin-bottom: 15px; word-break: break-all; }
         .status { background: #f0f0f0; padding: 12px; border-radius: 12px; text-align: center; font-size: 1.2em; font-weight: bold; margin-bottom: 15px; }
         .scores { display: flex; gap: 15px; margin-bottom: 20px; }
         .score { flex: 1; text-align: center; padding: 10px; border-radius: 12px; font-weight: bold; }
@@ -31,89 +29,89 @@
         .cell:hover:not(.taken) { background: #e0e0e0; transform: scale(0.95); }
         button { margin-top: 20px; width: 100%; padding: 12px; background: #667eea; color: white; border: none; border-radius: 30px; font-size: 1.1em; cursor: pointer; }
         .turn-hint { text-align: center; margin-top: 10px; font-size: 0.9em; color: #666; }
-        @media (max-width: 550px) { .game-box { padding: 12px; } .cell { font-size: 0.8em; } }
+        .drive-status { margin-top: 10px; font-size: 0.8em; color: #4CAF50; }
     </style>
-    <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
+    <!-- Google API Client -->
+    <script src="https://apis.google.com/js/api.js"></script>
 </head>
 <body>
 <div class="container">
-    <div id="connectionPanel" class="panel">
-        <h2>🎮 Гипер-крестики-нолики Онлайн</h2>
-        <p style="color: #666;">Играйте с другом по интернету</p>
-        <button id="createBtn">✨ Создать игру (Вы X)</button>
-        <div style="margin: 20px 0">или</div>
-        <input type="text" id="peerIdInput" placeholder="Введите ID соперника">
-        <button id="connectBtn">🔗 Подключиться (Вы O)</button>
-        <div style="margin-top: 20px; font-size: 0.8em; color: #999;">После создания игры отправьте ID другу</div>
+    <div id="authPanel" class="panel">
+        <h2>🎮 Гипер-крестики-нолики</h2>
+        <p style="color: #666;">Синхронизация через Google Диск</p>
+        <button id="authBtn">🔐 Войти через Google</button>
+        <div style="margin-top: 20px; font-size: 0.8em; color: #999;">Потребуется доступ к Google Диску для хранения игры</div>
     </div>
     
-    <div id="gameBox" class="game-box">
-        <div id="roomInfo" class="room-info"></div>
+    <div id="gameBox" class="game-box" style="display: none">
+        <div class="status" id="statusMsg">Загрузка...</div>
         <div class="scores">
             <div class="score score-x"><span>❌ X</span><span id="scoreX">0</span></div>
             <div class="score score-o"><span>⭕ O</span><span id="scoreO">0</span></div>
         </div>
-        <div class="status" id="statusMsg">Подключение...</div>
         <div class="big-board" id="bigBoard"></div>
         <div class="turn-hint" id="turnHint"></div>
         <button id="resetBtn">🔄 Новая игра</button>
+        <div class="drive-status" id="driveStatus"></div>
     </div>
 </div>
 
 <script>
-    let peer = null;
-    let conn = null;
-    let myId = null;
-    let isHost = false;
+    // CLIENT ID — нужно создать в Google Cloud Console
+    // ВАЖНО: замените на свой Client ID
+    const CLIENT_ID = 'YOUR_CLIENT_ID.apps.googleusercontent.com';
+    const API_KEY = 'YOUR_API_KEY';
+    const SCOPES = 'https://www.googleapis.com/auth/drive.file';
+    const FILE_NAME = 'hyper_tic_tac_toe_save.json';
+    
+    let tokenClient;
+    let gapiInited = false;
+    let gisInited = false;
+    let fileId = null;
     let localPlayer = null;
     
     // Игровое состояние
-    let smallGrid = Array(9).fill().map(() => Array(9).fill(null));
-    let bigWinner = Array(9).fill(null);
-    let bigLocked = Array(9).fill(false);
-    let scores = [0, 0];
-    let currentPlayer = 0;
-    let nextBig = null;
-    let gameWinner = null;
+    let gameState = {
+        smallGrid: Array(9).fill().map(() => Array(9).fill(null)),
+        bigWinner: Array(9).fill(null),
+        bigLocked: Array(9).fill(false),
+        scores: [0, 0],
+        currentPlayer: 0,
+        nextBig: null,
+        gameWinner: null,
+        lastMoveBy: null,
+        lastUpdate: 0
+    };
     
     const winLines = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
     const gridNames = ['ЮЗ', 'Ю', 'ЮВ', 'З', 'Ц', 'В', 'СЗ', 'С', 'СВ'];
     
-    function sendGameState() {
-        if (!conn || conn.open === false) return;
-        conn.send({
-            type: 'state',
-            data: {
-                smallGrid, bigLocked, currentPlayer, nextBig, gameWinner
-            }
-        });
-    }
-    
-    function checkAndSetSmallWin(bigIdx) {
-        if (bigLocked[bigIdx]) return bigWinner[bigIdx];
-        const grid = smallGrid[bigIdx];
+    function checkAndSetWin(bigIdx) {
+        if (gameState.bigLocked[bigIdx]) return gameState.bigWinner[bigIdx];
+        const grid = gameState.smallGrid[bigIdx];
         for (let line of winLines) {
             const [a,b,c] = line;
             if (grid[a] && grid[a] === grid[b] && grid[a] === grid[c]) {
-                bigWinner[bigIdx] = grid[a];
-                bigLocked[bigIdx] = true;
-                if (grid[a] === 'X') scores[0]++;
-                else scores[1]++;
+                gameState.bigWinner[bigIdx] = grid[a];
+                gameState.bigLocked[bigIdx] = true;
+                if (grid[a] === 'X') gameState.scores[0]++;
+                else gameState.scores[1]++;
                 return grid[a];
             }
         }
         return null;
     }
     
-    function updateScoresAndWinners() {
-        for (let i = 0; i < 9; i++) if (!bigLocked[i]) checkAndSetSmallWin(i);
-        if (scores[0] >= 5) gameWinner = 'X';
-        else if (scores[1] >= 5) gameWinner = 'O';
-        if (!gameWinner) {
+    function updateGame() {
+        for (let i = 0; i < 9; i++) if (!gameState.bigLocked[i]) checkAndSetWin(i);
+        gameState.gameWinner = null;
+        if (gameState.scores[0] >= 5) gameState.gameWinner = 'X';
+        else if (gameState.scores[1] >= 5) gameState.gameWinner = 'O';
+        if (!gameState.gameWinner) {
             for (let line of winLines) {
                 const [a,b,c] = line;
-                if (bigWinner[a] && bigWinner[a] === bigWinner[b] && bigWinner[a] === bigWinner[c]) {
-                    gameWinner = bigWinner[a];
+                if (gameState.bigWinner[a] && gameState.bigWinner[a] === gameState.bigWinner[b] && gameState.bigWinner[a] === gameState.bigWinner[c]) {
+                    gameState.gameWinner = gameState.bigWinner[a];
                     break;
                 }
             }
@@ -121,200 +119,224 @@
     }
     
     function makeMove(bigIdx, smallIdx) {
-        if (gameWinner) { alert(`Игра окончена! Победил ${gameWinner}`); return false; }
-        if (!localPlayer) return false;
-        const isMyTurn = (localPlayer === 'X' && currentPlayer === 0) || (localPlayer === 'O' && currentPlayer === 1);
-        if (!isMyTurn) { alert("Сейчас не ваш ход!"); return false; }
-        if (nextBig !== null && bigIdx !== nextBig) { alert(`Сейчас можно ходить только в квадрат ${gridNames[nextBig]}`); return false; }
-        if (smallGrid[bigIdx][smallIdx] !== null) { alert("Клетка занята!"); return false; }
+        if (gameState.gameWinner) { alert(`Игра окончена! Победил ${gameState.gameWinner}`); return; }
+        if (!localPlayer) { alert("Выберите, за кого играете (X или O)"); return; }
+        const myTurn = (localPlayer === 'X' && gameState.currentPlayer === 0) || (localPlayer === 'O' && gameState.currentPlayer === 1);
+        if (!myTurn) { alert("Сейчас не ваш ход"); return; }
+        if (gameState.nextBig !== null && bigIdx !== gameState.nextBig) { alert(`Ходите в квадрат ${gridNames[gameState.nextBig]}`); return; }
+        if (gameState.smallGrid[bigIdx][smallIdx] !== null) { alert("Клетка занята"); return; }
         
-        const mark = currentPlayer === 0 ? 'X' : 'O';
-        smallGrid[bigIdx][smallIdx] = mark;
-        checkAndSetSmallWin(bigIdx);
-        updateScoresAndWinners();
-        nextBig = smallIdx;
-        currentPlayer = 1 - currentPlayer;
+        gameState.smallGrid[bigIdx][smallIdx] = localPlayer;
+        checkAndSetWin(bigIdx);
+        updateGame();
+        gameState.nextBig = smallIdx;
+        gameState.currentPlayer = 1 - gameState.currentPlayer;
+        gameState.lastMoveBy = localPlayer;
+        gameState.lastUpdate = Date.now();
         
-        sendGameState();
+        saveToDrive();
         render();
-        return true;
     }
     
-    function loadRemoteState(state) {
-        if (!state) return;
-        smallGrid = state.smallGrid;
-        bigLocked = state.bigLocked;
-        currentPlayer = state.currentPlayer;
-        nextBig = state.nextBig;
-        gameWinner = state.gameWinner;
-        
-        // Пересчитываем bigWinner и scores
-        bigWinner = Array(9).fill(null);
-        scores = [0, 0];
-        for (let i = 0; i < 9; i++) {
-            if (bigLocked[i]) {
-                const grid = smallGrid[i];
-                for (let line of winLines) {
-                    const [a,b,c] = line;
-                    if (grid[a] && grid[a] === grid[b] && grid[a] === grid[c]) {
-                        bigWinner[i] = grid[a];
-                        if (grid[a] === 'X') scores[0]++;
-                        else scores[1]++;
-                        break;
-                    }
-                }
+    async function saveToDrive() {
+        if (!fileId) return;
+        const content = JSON.stringify(gameState);
+        const response = await fetch(`https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`, {
+            method: 'PATCH',
+            headers: {
+                'Authorization': `Bearer ${tokenClient.credentials.access_token}`,
+                'Content-Type': 'application/json'
+            },
+            body: content
+        });
+        if (response.ok) {
+            document.getElementById('driveStatus').innerHTML = '✓ Сохранено в Google Диск';
+            setTimeout(() => document.getElementById('driveStatus').innerHTML = '', 2000);
+        }
+    }
+    
+    async function loadFromDrive() {
+        if (!fileId) return;
+        const response = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
+            headers: { 'Authorization': `Bearer ${tokenClient.credentials.access_token}` }
+        });
+        if (response.ok) {
+            const data = await response.json();
+            if (data && data.lastUpdate > gameState.lastUpdate) {
+                gameState = data;
+                render();
             }
+        }
+    }
+    
+    async function findOrCreateFile() {
+        // Ищем файл
+        const searchResponse = await fetch(`https://www.googleapis.com/drive/v3/files?q=name='${FILE_NAME}'&fields=files(id,name)`, {
+            headers: { 'Authorization': `Bearer ${tokenClient.credentials.access_token}` }
+        });
+        const searchResult = await searchResponse.json();
+        
+        if (searchResult.files && searchResult.files.length > 0) {
+            fileId = searchResult.files[0].id;
+            await loadFromDrive();
+        } else {
+            // Создаём новый файл
+            const createResponse = await fetch('https://www.googleapis.com/drive/v3/files', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${tokenClient.credentials.access_token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ name: FILE_NAME, mimeType: 'application/json' })
+            });
+            const newFile = await createResponse.json();
+            fileId = newFile.id;
+            
+            // Инициализируем начальное состояние
+            gameState = {
+                smallGrid: Array(9).fill().map(() => Array(9).fill(null)),
+                bigWinner: Array(9).fill(null),
+                bigLocked: Array(9).fill(false),
+                scores: [0, 0],
+                currentPlayer: 0,
+                nextBig: null,
+                gameWinner: null,
+                lastMoveBy: null,
+                lastUpdate: Date.now()
+            };
+            await saveToDrive();
         }
         render();
     }
     
     function render() {
         const boardDiv = document.getElementById('bigBoard');
-        if (!boardDiv) return;
         boardDiv.innerHTML = '';
-        const isMyTurn = localPlayer && ((localPlayer === 'X' && currentPlayer === 0) || (localPlayer === 'O' && currentPlayer === 1));
+        const myTurn = localPlayer && ((localPlayer === 'X' && gameState.currentPlayer === 0) || (localPlayer === 'O' && gameState.currentPlayer === 1));
         
         for (let big = 0; big < 9; big++) {
-            const bigCell = document.createElement('div');
-            bigCell.className = 'big-cell';
-            if (bigWinner[big]) { bigCell.classList.add('won'); bigCell.setAttribute('data-winner', bigWinner[big]); }
-            if (!gameWinner && nextBig !== null && nextBig === big && isMyTurn) bigCell.classList.add('highlight');
+            const bigDiv = document.createElement('div');
+            bigDiv.className = 'big-cell';
+            if (gameState.bigWinner[big]) {
+                bigDiv.classList.add('won');
+                bigDiv.setAttribute('data-winner', gameState.bigWinner[big]);
+            }
+            if (!gameState.gameWinner && gameState.nextBig !== null && gameState.nextBig === big && myTurn) bigDiv.classList.add('highlight');
             
             const smallDiv = document.createElement('div'); smallDiv.className = 'small-board';
             for (let small = 0; small < 9; small++) {
                 const cell = document.createElement('div'); cell.className = 'cell';
-                const val = smallGrid[big] ? smallGrid[big][small] : null;
+                const val = gameState.smallGrid[big]?.[small];
                 if (val) {
                     cell.classList.add('taken', val === 'X' ? 'x' : 'o');
                     cell.textContent = val;
                 } else {
                     cell.textContent = '';
-                    let canClick = false;
-                    if (!gameWinner && isMyTurn) {
-                        if (nextBig === null) canClick = true;
-                        else if (big === nextBig) canClick = true;
+                    if (!gameState.gameWinner && myTurn && (gameState.nextBig === null || big === gameState.nextBig)) {
+                        cell.onclick = (() => makeMove(big, small));
                     }
-                    if (canClick) cell.onclick = (function(b, s) { return () => makeMove(b, s); })(big, small);
                 }
                 smallDiv.appendChild(cell);
             }
-            bigCell.appendChild(smallDiv);
-            boardDiv.appendChild(bigCell);
+            bigDiv.appendChild(smallDiv);
+            boardDiv.appendChild(bigDiv);
         }
         
-        document.getElementById('scoreX').textContent = scores[0];
-        document.getElementById('scoreO').textContent = scores[1];
+        document.getElementById('scoreX').textContent = gameState.scores[0];
+        document.getElementById('scoreO').textContent = gameState.scores[1];
         
         const statusDiv = document.getElementById('statusMsg');
-        if (gameWinner) statusDiv.innerHTML = `🏆 ПОБЕДИЛ ${gameWinner} 🏆`;
-        else if (!localPlayer) statusDiv.innerHTML = `Ожидание подключения...`;
-        else if (isMyTurn) {
-            if (nextBig === null) statusDiv.innerHTML = `🎯 Ваш ход (${localPlayer}) — ЛЮБОЙ квадрат`;
-            else statusDiv.innerHTML = `🎯 Ваш ход (${localPlayer}) — ходите в ЗЕЛЁНЫЙ квадрат (${gridNames[nextBig]})`;
-        } else statusDiv.innerHTML = `⏳ Ход соперника... Ждите`;
+        if (gameState.gameWinner) statusDiv.innerHTML = `🏆 ПОБЕДИЛ ${gameState.gameWinner}`;
+        else if (!localPlayer) statusDiv.innerHTML = 'Выберите X или O (кнопка ниже)';
+        else if (myTurn) {
+            if (gameState.nextBig === null) statusDiv.innerHTML = `Ваш ход (${localPlayer}) — ЛЮБОЙ квадрат`;
+            else statusDiv.innerHTML = `Ваш ход (${localPlayer}) — зелёный квадрат ${gridNames[gameState.nextBig]}`;
+        } else statusDiv.innerHTML = `Ход соперника... (${gameState.currentPlayer === 0 ? 'X' : 'O'})`;
         
         const hintDiv = document.getElementById('turnHint');
-        if (!gameWinner && localPlayer && nextBig !== null) hintDiv.innerHTML = `📌 Следующий квадрат: ${gridNames[nextBig]}`;
-        else hintDiv.innerHTML = '';
+        hintDiv.innerHTML = (!gameState.gameWinner && localPlayer && gameState.nextBig !== null) ? `Следующий квадрат: ${gridNames[gameState.nextBig]}` : '';
     }
     
-    function resetGame() {
-        smallGrid = Array(9).fill().map(() => Array(9).fill(null));
-        bigWinner = Array(9).fill(null);
-        bigLocked = Array(9).fill(false);
-        scores = [0, 0];
-        currentPlayer = 0;
-        nextBig = null;
-        gameWinner = null;
-        if (conn && conn.open) sendGameState();
+    function setPlayer(player) {
+        localPlayer = player;
         render();
     }
     
-    function createGame() {
-        isHost = true;
-        localPlayer = 'X';
-        document.getElementById('connectionPanel').style.display = 'none';
-        document.getElementById('gameBox').style.display = 'block';
-        document.getElementById('statusMsg').innerHTML = 'Создание комнаты...';
-        
-        // Используем надежный сервер PeerJS
-        peer = new Peer(undefined, {
-            host: '0.peerjs.com',
-            port: 443,
-            path: '/',
-            secure: true
-        });
-        
-        peer.on('open', (id) => {
-            myId = id;
-            document.getElementById('roomInfo').innerHTML = `🔑 Ваш ID: <strong style="font-size:1.3em">${id}</strong><br><small>Отправьте его другу для подключения</small>`;
-            document.getElementById('statusMsg').innerHTML = 'Ожидание подключения...';
-            render();
-        });
-        
-        peer.on('connection', (connection) => {
-            conn = connection;
-            conn.on('open', () => {
-                document.getElementById('statusMsg').innerHTML = 'Соединение установлено!';
-                sendGameState();
-                render();
+    function resetGame() {
+        gameState = {
+            smallGrid: Array(9).fill().map(() => Array(9).fill(null)),
+            bigWinner: Array(9).fill(null),
+            bigLocked: Array(9).fill(false),
+            scores: [0, 0],
+            currentPlayer: 0,
+            nextBig: null,
+            gameWinner: null,
+            lastMoveBy: null,
+            lastUpdate: Date.now()
+        };
+        saveToDrive();
+        render();
+    }
+    
+    function startPolling() {
+        setInterval(async () => {
+            if (fileId && tokenClient) {
+                await loadFromDrive();
+            }
+        }, 3000); // проверяем изменения каждые 3 секунды
+    }
+    
+    function initGapi() {
+        gapi.load('client', async () => {
+            await gapi.client.init({
+                apiKey: API_KEY,
+                discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest']
             });
-            conn.on('data', (data) => {
-                if (data.type === 'state') loadRemoteState(data.data);
-            });
-        });
-        
-        peer.on('error', (err) => {
-            console.error('Peer error:', err);
-            document.getElementById('statusMsg').innerHTML = 'Ошибка подключения. Попробуйте обновить страницу.';
-            alert('Не удалось создать комнату. Возможно, сервер PeerJS временно недоступен. Попробуйте через 5 минут.');
+            gapiInited = true;
         });
     }
     
-    function connectToPeer() {
-        const targetId = document.getElementById('peerIdInput').value.trim();
-        if (!targetId) { alert('Введите ID'); return; }
-        
-        localPlayer = 'O';
-        document.getElementById('connectionPanel').style.display = 'none';
-        document.getElementById('gameBox').style.display = 'block';
-        document.getElementById('roomInfo').innerHTML = `🔗 Подключение к ${targetId}...`;
-        document.getElementById('statusMsg').innerHTML = 'Подключение...';
-        
-        peer = new Peer(undefined, {
-            host: '0.peerjs.com',
-            port: 443,
-            path: '/',
-            secure: true
+    function initGis() {
+        tokenClient = google.accounts.oauth2.initTokenClient({
+            client_id: CLIENT_ID,
+            scope: SCOPES,
+            callback: async (resp) => {
+                if (resp.error) throw resp;
+                await findOrCreateFile();
+                document.getElementById('authPanel').style.display = 'none';
+                document.getElementById('gameBox').style.display = 'block';
+                startPolling();
+                
+                // Добавляем кнопки выбора игрока
+                const playerPanel = document.createElement('div');
+                playerPanel.style.display = 'flex';
+                playerPanel.style.gap = '10px';
+                playerPanel.style.margin = '10px 0';
+                playerPanel.innerHTML = `
+                    <button id="chooseX" style="margin:0; flex:1">❌ Играть за X</button>
+                    <button id="chooseO" style="margin:0; flex:1">⭕ Играть за O</button>
+                `;
+                document.getElementById('gameBox').insertBefore(playerPanel, document.getElementById('bigBoard'));
+                document.getElementById('chooseX').onclick = () => setPlayer('X');
+                document.getElementById('chooseO').onclick = () => setPlayer('O');
+            },
         });
-        
-        peer.on('open', () => {
-            conn = peer.connect(targetId);
-            conn.on('open', () => {
-                document.getElementById('roomInfo').innerHTML = `🔗 Подключено к ${targetId}`;
-                document.getElementById('statusMsg').innerHTML = 'Соединение установлено!';
-                render();
-            });
-            conn.on('data', (data) => {
-                if (data.type === 'state') loadRemoteState(data.data);
-            });
-            conn.on('error', (err) => {
-                console.error(err);
-                document.getElementById('statusMsg').innerHTML = 'Ошибка соединения';
-                alert('Не удалось подключиться. Проверьте ID и попробуйте снова.');
-            });
-        });
-        
-        peer.on('error', (err) => {
-            console.error(err);
-            document.getElementById('statusMsg').innerHTML = 'Ошибка подключения';
-            alert('Ошибка подключения к серверу. Попробуйте обновить страницу.');
-        });
+        gisInited = true;
     }
     
-    document.getElementById('createBtn').onclick = createGame;
-    document.getElementById('connectBtn').onclick = connectToPeer;
+    document.getElementById('authBtn').onclick = () => {
+        if (!gapiInited || !gisInited) {
+            alert('Загрузка API, попробуйте ещё раз через секунду');
+            return;
+        }
+        tokenClient.requestAccessToken({ prompt: 'consent' });
+    };
+    
     document.getElementById('resetBtn').onclick = resetGame;
+    
+    // Загружаем API
+    initGapi();
+    initGis();
 </script>
 </body>
 </html>
