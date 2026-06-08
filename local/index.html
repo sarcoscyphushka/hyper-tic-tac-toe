@@ -300,6 +300,26 @@
             .app-container { flex-direction: column; }
             .winner-overlay { font-size: 3em; }
         }
+/* Угловая картинка */
+.corner-image {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: auto;
+    height: auto;
+    max-width: 180px;
+    max-height: 360px;
+    z-index: 1000;
+    opacity: 0.9;
+    transition: opacity 0.2s;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.corner-image:hover {
+    opacity: 1;
+}
+        
     </style>
 </head>
 <body>
@@ -530,5 +550,8 @@
     document.getElementById('resetBtn').onclick = resetGame;
     resetGame();
 </script>
+<img src="local/derevo.png" 
+     alt="Светофор!" 
+     class="corner-image">
 </body>
 </html>
