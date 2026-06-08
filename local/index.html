@@ -315,6 +315,20 @@
     opacity: 1;
 }
 
+.west-decor {
+    position: absolute;
+    left: -100px;       /* зеркально правому краю */
+    top: 70%;
+    transform: translateY(-50%) scaleX(-1);  /* зеркальное отражение по горизонтали */
+    width: 120px;
+    height: auto;
+    z-index: 10;
+    pointer-events: none;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+}
+
 .east-decor {
     position: absolute;
     right: -100px;      /* чтобы не наезжала на подпись, можно подобрать */
@@ -352,8 +366,10 @@
             <div class="compass-label label-north">СЕВЕР</div>
             <div class="compass-label label-south">ЮГ</div>
             <div class="compass-label label-west">ЗАПАД</div>
+            <div class="compass-label label-west">ЗАПАД</div>
+            <img src="pojakonda.png" alt="Указатель" class="west-decor">
             <div class="compass-label label-east">ВОСТОК</div>
-            <img src="penza.png" alt="декор" class="east-decor">
+            <img src="penza.png" alt="Указатель" class="east-decor">
         </div>
         <div class="turn-hint" id="turnHint"></div>
         <button class="reset-btn" id="resetBtn">🔄 Новая игра</button>
