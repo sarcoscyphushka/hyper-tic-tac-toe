@@ -10,7 +10,7 @@
             user-select: none;
             box-sizing: border-box;
         }
-       body {
+    body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background: white; /* вместо градиента */
     min-height: 100vh;
@@ -311,6 +311,8 @@
     max-width: 280px;
     max-height: 400px;
     z-index: 1000;
+    cursor: pointer;
+    transition: opacity 0.2s;
 }
 .corner-image:hover {
     opacity: 1;
@@ -650,6 +652,30 @@
     // ----- ЗАПУСК -----
     document.getElementById('resetBtn').onclick = resetGame;
     resetGame();
+
+// ПЕРЕКЛЮЧЕНИЕ КАРТИНКИ ПО КЛИКУ (пасхалка)
+const cornerImg = document.querySelector('.corner-image');
+if (cornerImg) {
+    // Пути к картинкам 
+    const img1 = 'derevo.png';        // первая картинка (вертикальная)
+    const img2 = 'ryba.png'; // вторая (горизонтальная)
+    
+    let isImg1 = true;
+    
+    cornerImg.addEventListener('click', function() {
+        if (isImg1) {
+            this.src = img2;
+            // Опционально: изменить размер, если картинка горизонтальная
+            this.style.width = 'auto';
+            this.style.height = '180px';  // подберите под вашу горизонтальную картинку
+        } else {
+            this.src = img1;
+            this.style.width = '';         // возвращаем исходный размер
+            this.style.height = '';
+        }
+        isImg1 = !isImg1;
+    });
+}
 </script>
 <img src="derevo.png" 
      alt="Светофор!" 
