@@ -347,7 +347,7 @@
 /* Высокая картинка справа от западной (дальше слева) */
 .tall-west-decor {
     position: absolute;
-    left: -220px;
+    left: -300px;
     top: 60%;
     transform: translateY(-50%);
     width: 280px;        /* вдвое шире, чем обычные */
@@ -357,12 +357,13 @@
     background: transparent;
     border: none;
     box-shadow: none;
+    mix-blend-mode: multiply;
 }
 
 /* Высокая картинка слева от восточной (дальше справа) */
 .tall-east-decor {
     position: absolute;
-    right: -220px;
+    right: -300px;
     top: 60%;
     transform: translateY(-50%);
     width: 280px;        /* вдвое шире, чем обычные (было 80) */
@@ -372,6 +373,7 @@
     background: transparent;
     border: none;
     box-shadow: none;
+    mix-blend-mode: multiply;
 }
 
 .title-image-wrapper {
