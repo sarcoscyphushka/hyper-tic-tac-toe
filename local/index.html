@@ -1,4 +1,4 @@
-    <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
@@ -105,40 +105,24 @@
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 10px;
-            background: #8BC34A;
+            background: #2c3e50;
             padding: 10px;
             border-radius: 16px;
         }
-       /* Базовый фон для всех больших квадратов (по умолчанию) */
-.big-cell {
-    background: #f5f5f5;
-    border-radius: 12px;
-    padding: 8px;
-    position: relative;
-    transition: all 0.1s ease;
-}
-
-/* Угловые квадраты (СЗ, СВ, ЮЗ, ЮВ) — оранжевые */
-.big-cell.corner {
-    background: #FFD700;
-}
-
-/* Боковые квадраты (С, В, Ю, З) — красные */
-.big-cell.side {
-    background: #E53935;
-}
-
-/* Центральный квадрат (Ц) — жёлтый */
-.big-cell.center {
-    background: #FFD700;
-}
-
-/* Затемнение для подсветки активного квадрата (остаётся зелёным поверх цвета) */
-.big-cell.highlight {
-    background: #A5D6A7;   /* светлый зелёный для подсветки */
-    box-shadow: 0 0 0 4px #1b5e20, 0 0 0 8px rgba(27, 94, 32, 0.3);
-    animation: pulse 1.2s ease-in-out infinite;
-}
+        /* Большой квадрат */
+        .big-cell {
+            background: #ecf0f1;
+            border-radius: 12px;
+            padding: 8px;
+            position: relative;
+            transition: all 0.1s ease;
+        }
+        /* Подсветка активного квадрата */
+       .big-cell.highlight {
+            background: #a5d6a7;
+            box-shadow: 0 0 0 4px #1b5e20, 0 0 0 8px rgba(27, 94, 32, 0.3);
+            animation: pulse 1.2s ease-in-out infinite;
+        }
 
         @keyframes pulse {
             0% { box-shadow: 0 0 0 4px #1b5e20, 0 0 0 8px rgba(27, 94, 32, 0.3); }
@@ -172,12 +156,11 @@
     .cell.o { color: #F44336; background: white; }
     .cell.taken { cursor: not-allowed; }
 /* Подсветка только для доступных клеток (кликабельных) */
-   .cell:not(.taken):hover {
-    background: #8BC34A;
-    opacity: 0.7;
-    transform: scale(0.96);
-    cursor: pointer;
-}
+    .cell:not(.taken):hover {
+        background: #e0e0e0;
+        transform: scale(0.96);
+        cursor: pointer;
+    }
     .cell:active:not(.taken) { transform: scale(0.96); }
 /* Если клетка не кликабельна (но и не taken) — нет подсветки и курсор по умолчанию */
     .cell:not(.taken):not([style*="cursor: pointer"]):hover {
@@ -334,7 +317,7 @@
 
 .west-decor {
     position: absolute;
-    left: -130px;       /* зеркально правому краю */
+    left: -100px;       /* зеркально правому краю */
     top: 80%;
     transform: translateY(-50%);  
     width: 170px;
@@ -508,17 +491,8 @@
         container.innerHTML = '';
         
         for (let big = 0; big < 9; big++) {
-           const bigDiv = document.createElement('div');
-// Определяем класс в зависимости от позиции большого квадрата
-        let cellType = '';
-        if (big === 0 || big === 2 || big === 6 || big === 8) {
-            cellType = 'corner';   // угловые (СЗ, СВ, ЮЗ, ЮВ)
-        } else if (big === 1 || big === 3 || big === 5 || big === 7) {
-            cellType = 'side';     // боковые (С, З, В, Ю)
-        } else if (big === 4) {
-            cellType = 'center';   // центр
-        }
-bigDiv.className = `big-cell ${cellType}`;
+            const bigDiv = document.createElement('div');
+            bigDiv.className = 'big-cell';
             if (!gameWinner && nextBig !== null && nextBig === big) {
                 bigDiv.classList.add('highlight');
             }
