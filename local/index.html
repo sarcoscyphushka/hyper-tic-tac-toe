@@ -343,7 +343,38 @@
     border: none;
     box-shadow: none;
 }
-    .title-image-wrapper {
+
+/* Высокая картинка справа от западной (дальше слева) */
+.tall-west-decor {
+    position: absolute;
+    left: -220px;
+    top: 60%;
+    transform: translateY(-50%);
+    width: 280px;        /* вдвое шире, чем обычные */
+    height: auto;
+    z-index: 10;
+    pointer-events: none;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+}
+
+/* Высокая картинка слева от восточной (дальше справа) */
+.tall-east-decor {
+    position: absolute;
+    right: -220px;
+    top: 60%;
+    transform: translateY(-50%);
+    width: 280px;        /* вдвое шире, чем обычные (было 80) */
+    height: auto;
+    z-index: 10;
+    pointer-events: none;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+}
+
+.title-image-wrapper {
     text-align: center;
     margin-bottom: 20px;
     width: 100%;
@@ -385,8 +416,10 @@
             <div class="compass-label label-west">ЗАПАД</div>
             <div class="compass-label label-west">ЗАПАД</div>
             <img src="pojakonda.png" alt="Указатель" class="west-decor">
+            <img src="taksist.png" alt="Таксист" class="tall-west-decor">
             <div class="compass-label label-east">ВОСТОК</div>
             <img src="penza.png" alt="Указатель" class="east-decor">
+            <img src="polithejskij.png" alt="Полицейский" class="tall-east-decor">
         </div>
         <div class="turn-hint" id="turnHint"></div>
         <button class="reset-btn" id="resetBtn">🔄 Новая игра</button>
