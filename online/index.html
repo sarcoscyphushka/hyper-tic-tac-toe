@@ -374,37 +374,43 @@
     }
 
     // ----- ЛОГИКА ИГРЫ -----
-    function checkSmallWin(bigIdx) {
-        if (bigLocked[bigIdx]) return bigWinner[bigIdx];
-        const grid = smallGrid[bigIdx];
+   function checkSmallWin(bigIdx) {
+    if (bigLocked[bigIdx]) return bigWinner[bigIdx];
+    const grid = smallGrid[bigIdx];
+    for (let line of winLines) {
+        const [a,b,c] = line;
+        if (grid[a] && grid[a] === grid[b] && grid[a] === grid[c]) {
+            bigWinner[bigIdx] = grid[a];
+            bigLocked[bigIdx] = true;
+            if (grid[a] === 'X') scores[0]++;
+            else scores[1]++;
+            return grid[a];
+        }
+    }
+    return null;
+}
+    
+    function updateGame() {
+    // Проверяем только НЕзаблокированные квадраты
+    for (let i = 0; i < 9; i++) {
+        if (!bigLocked[i]) {
+            checkSmallWin(i);
+        }
+    }
+    
+    gameWinner = null;
+    if (scores[0] >= 5) gameWinner = 'X';
+    else if (scores[1] >= 5) gameWinner = 'O';
+    if (!gameWinner) {
         for (let line of winLines) {
             const [a,b,c] = line;
-            if (grid[a] && grid[a] === grid[b] && grid[a] === grid[c]) {
-                bigWinner[bigIdx] = grid[a];
-                bigLocked[bigIdx] = true;
-                if (grid[a] === 'X') scores[0]++;
-                else scores[1]++;
-                return grid[a];
-            }
-        }
-        return null;
-    }
-
-    function updateGame() {
-        for (let i = 0; i < 9; i++) if (!bigLocked[i]) checkSmallWin(i);
-        gameWinner = null;
-        if (scores[0] >= 5) gameWinner = 'X';
-        else if (scores[1] >= 5) gameWinner = 'O';
-        if (!gameWinner) {
-            for (let line of winLines) {
-                const [a,b,c] = line;
-                if (bigWinner[a] && bigWinner[a] === bigWinner[b] && bigWinner[a] === bigWinner[c]) {
-                    gameWinner = bigWinner[a];
-                    break;
-                }
+            if (bigWinner[a] && bigWinner[a] === bigWinner[b] && bigWinner[a] === bigWinner[c]) {
+                gameWinner = bigWinner[a];
+                break;
             }
         }
     }
+}
 
     async function saveState() {
         if (!gameId) return;
@@ -416,23 +422,40 @@
         });
     }
 
-    async function loadState() {
-        if (!gameId) return;
-        const res = await fetch(`/api/get-state/${gameId}`);
-        if (res.ok) {
-            const state = await res.json();
-            smallGrid = state.smallGrid;
-            bigLocked = state.bigLocked;
-            currentPlayer = state.currentPlayer;
-            nextBig = state.nextBig;
-            gameWinner = state.gameWinner;
-            scores = state.scores;
-            moveHistory = state.moveHistory || [];
-            for (let i=0;i<9;i++) if (bigLocked[i]) checkSmallWin(i);
-            updateNotationUI();
-            render();
+   async function loadState() {
+    if (!gameId) return;
+    const res = await fetch(`/api/get-state/${gameId}`);
+    if (res.ok) {
+        const state = await res.json();
+        smallGrid = state.smallGrid;
+        bigLocked = state.bigLocked;
+        currentPlayer = state.currentPlayer;
+        nextBig = state.nextBig;
+        gameWinner = state.gameWinner;
+        scores = state.scores;
+        moveHistory = state.moveHistory || [];
+        
+        // Восстанавливаем bigWinner на основе bigLocked
+        for (let i = 0; i < 9; i++) {
+            if (bigLocked[i]) {
+                // Находим победителя в квадрате по маленьким клеткам
+                const grid = smallGrid[i];
+                for (let line of winLines) {
+                    const [a,b,c] = line;
+                    if (grid[a] && grid[a] === grid[b] && grid[a] === grid[c]) {
+                        bigWinner[i] = grid[a];
+                        break;
+                    }
+                }
+            } else {
+                bigWinner[i] = null;
+            }
         }
+        
+        updateNotationUI();
+        render();
     }
+}
 
     async function makeMove(bigIdx, smallIdx) {
         if (gameWinner) return;
