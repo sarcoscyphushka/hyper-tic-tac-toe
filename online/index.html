@@ -2,30 +2,61 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Гипер-крестики-нолики — онлайн версия</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Гипер-крестики-нолики — онлайн</title>
     <style>
-        /* Здесь можно скопировать стили из твоей локальной версии, 
-           но для начала оставим минимальные */
-        body { font-family: sans-serif; background: white; padding: 20px; }
-        .game-area { max-width: 800px; margin: auto; }
-        .big-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; background: #333; padding: 8px; border-radius: 12px; }
-        .big-cell { background: white; border-radius: 8px; padding: 6px; aspect-ratio:1; }
-        .small-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 3px; background: #ddd; padding: 3px; border-radius: 5px; height: 100%; }
-        .cell { background: white; aspect-ratio:1; display: flex; align-items: center; justify-content: center; font-size: 1.2em; font-weight: bold; border-radius: 4px; cursor: pointer; }
-        .cell.taken { cursor: not-allowed; opacity:0.6; }
-        .status { margin: 20px 0; padding: 12px; background: #f0f0f0; border-radius: 12px; text-align: center; }
-        button { margin-top: 20px; padding: 10px 20px; }
+        * { user-select: none; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f5f5; min-height: 100vh; margin: 0; padding: 20px; display: flex; justify-content: center; align-items: center; }
+        .container { max-width: 800px; width: 100%; background: white; border-radius: 28px; padding: 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .scores { display: flex; gap: 16px; margin-bottom: 24px; }
+        .score-card { flex: 1; text-align: center; padding: 12px; border-radius: 20px; font-weight: bold; }
+        .score-x { background: #E3F2FD; color: #0D47A1; }
+        .score-o { background: #FFEBEE; color: #B71C1C; }
+        .score-symbol { font-size: 1.1em; display: block; margin-bottom: 6px; }
+        .score-label { font-size: 0.8em; opacity: 0.7; display: block; }
+        .score-value { font-size: 2.2em; font-weight: bold; line-height: 1; margin-top: 4px; }
+        .status { background: #f0f0f0; padding: 12px; border-radius: 16px; text-align: center; font-size: 1.2em; font-weight: bold; margin-bottom: 20px; }
+        .big-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; background: #2c3e50; padding: 10px; border-radius: 16px; }
+        .big-cell { background: #ecf0f1; border-radius: 12px; padding: 8px; position: relative; }
+        .big-cell.highlight { background: #a5d6a7; box-shadow: 0 0 0 3px #2e7d32; }
+        .small-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; background: #bdc3c7; padding: 4px; border-radius: 8px; }
+        .cell { background: white; aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-size: 1.3em; font-weight: bold; border-radius: 6px; cursor: default; }
+        .cell.x { color: #2196F3; }
+        .cell.o { color: #F44336; }
+        .cell.taken { cursor: not-allowed; }
+        .cell:not(.taken):hover { background: #e0e0e0; transform: scale(0.96); cursor: pointer; }
+        .winner-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; font-size: calc(100% + 2vw); font-weight: bold; opacity: 0.35; pointer-events: none; }
+        .reset-btn { margin-top: 24px; width: 100%; padding: 12px; background: #667eea; color: white; border: none; border-radius: 40px; font-size: 1.1em; cursor: pointer; }
+        .reset-btn:hover { background: #5a67d8; }
+        .game-info { margin-top: 16px; text-align: center; font-size: 0.9em; color: #666; }
+        .menu { text-align: center; margin-bottom: 20px; }
+        .menu button { margin: 5px; padding: 10px 20px; }
+        .join-panel { margin-top: 10px; }
+        .join-panel input { padding: 8px; margin-right: 10px; }
     </style>
 </head>
 <body>
-<div class="game-area">
-    <div class="status" id="status">Подключение...</div>
-    <div id="bigGrid" class="big-grid"></div>
-    <button id="resetBtn">Новая игра</button>
+<div class="container">
+    <div id="menu" class="menu">
+        <button id="newGameBtn">✨ Новая игра (буду X)</button>
+        <div class="join-panel">
+            <input type="text" id="joinCode" placeholder="Код игры">
+            <button id="joinGameBtn">🔗 Подключиться (буду O)</button>
+        </div>
+    </div>
+    <div id="gameArea" style="display: none;">
+        <div class="scores">
+            <div class="score-card score-x"><div class="score-symbol">❌ КРЕСТИКИ</div><div class="score-label">Счёт:</div><div class="score-value" id="scoreX">0</div></div>
+            <div class="score-card score-o"><div class="score-symbol">⭕ НОЛИКИ</div><div class="score-label">Счёт:</div><div class="score-value" id="scoreO">0</div></div>
+        </div>
+        <div class="status" id="statusMsg">Подключение...</div>
+        <div id="bigGrid" class="big-grid"></div>
+        <div class="game-info" id="gameInfo"></div>
+        <button class="reset-btn" id="resetBtn">🔄 Новая игра</button>
+    </div>
 </div>
 
 <script>
-    // Базовое состояние игры (как в локальной версии, но без синхронизации через Яндекс.Диск)
     let smallGrid = Array(9).fill().map(() => Array(9).fill(null));
     let bigWinner = Array(9).fill(null);
     let bigLocked = Array(9).fill(false);
@@ -33,13 +64,13 @@
     let currentPlayer = 0;
     let nextBig = null;
     let gameWinner = null;
-    let myPlayer = null; // 'X' или 'O'
+    let myPlayer = null;
     let gameId = null;
+    let updateInterval = null;
 
     const winLines = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
     const gridNames = ['СЗ', 'С', 'СВ', 'З', 'Ц', 'В', 'ЮЗ', 'Ю', 'ЮВ'];
 
-    // Функции игровой логики (те же, что в локальной версии)
     function checkSmallWin(bigIdx) {
         if (bigLocked[bigIdx]) return bigWinner[bigIdx];
         const grid = smallGrid[bigIdx];
@@ -72,22 +103,6 @@
         }
     }
 
-    async function makeMove(bigIdx, smallIdx) {
-        if (gameWinner) return;
-        if (myPlayer !== (currentPlayer === 0 ? 'X' : 'O')) { alert("Сейчас не ваш ход"); return; }
-        if (nextBig !== null && bigIdx !== nextBig) { alert(`Ходите в ${gridNames[nextBig]}`); return; }
-        if (smallGrid[bigIdx][smallIdx] !== null) { alert("Занято"); return; }
-
-        smallGrid[bigIdx][smallIdx] = myPlayer;
-        checkSmallWin(bigIdx);
-        updateGame();
-        nextBig = smallIdx;
-        currentPlayer = 1 - currentPlayer;
-
-        await saveState();
-        render();
-    }
-
     async function saveState() {
         if (!gameId) return;
         const state = { smallGrid, bigLocked, currentPlayer, nextBig, gameWinner, scores };
@@ -109,28 +124,25 @@
             nextBig = state.nextBig;
             gameWinner = state.gameWinner;
             scores = state.scores;
-            // пересчитать bigWinner
             for (let i=0;i<9;i++) if (bigLocked[i]) checkSmallWin(i);
             render();
         }
     }
 
-    async function waitForUpdates() {
-        while (true) {
-            const res = await fetch(`/api/wait-state/${gameId}`);
-            if (res.status === 200) {
-                const state = await res.json();
-                smallGrid = state.smallGrid;
-                bigLocked = state.bigLocked;
-                currentPlayer = state.currentPlayer;
-                nextBig = state.nextBig;
-                gameWinner = state.gameWinner;
-                scores = state.scores;
-                for (let i=0;i<9;i++) if (bigLocked[i]) checkSmallWin(i);
-                render();
-            }
-            await new Promise(r => setTimeout(r, 500));
-        }
+    async function makeMove(bigIdx, smallIdx) {
+        if (gameWinner) return;
+        if (myPlayer !== (currentPlayer === 0 ? 'X' : 'O')) { alert("Сейчас не ваш ход"); return; }
+        if (nextBig !== null && bigIdx !== nextBig) { alert(`Ходите в квадрат ${gridNames[nextBig]}`); return; }
+        if (smallGrid[bigIdx][smallIdx] !== null) { alert("Занято"); return; }
+
+        smallGrid[bigIdx][smallIdx] = myPlayer;
+        checkSmallWin(bigIdx);
+        updateGame();
+        nextBig = smallIdx;
+        currentPlayer = 1 - currentPlayer;
+
+        await saveState();
+        render();
     }
 
     async function initGame(joinGameId = null) {
@@ -141,41 +153,57 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ gameId })
             });
-            if (!res.ok) { alert("Не удалось подключиться"); return; }
+            if (!res.ok) { alert("Не удалось подключиться"); return false; }
             myPlayer = 'O';
             await loadState();
+            document.getElementById('gameInfo').innerHTML = `Вы играете за O. Код игры: ${gameId}`;
         } else {
             const res = await fetch('/api/new-game', { method: 'POST' });
             const data = await res.json();
             gameId = data.gameId;
             myPlayer = 'X';
-            document.getElementById('status').innerHTML = `Игра создана. Код: ${gameId}. Отправьте его другу.`;
             await saveState();
+            document.getElementById('gameInfo').innerHTML = `Вы играете за X. Код игры: ${gameId}<br>Отправьте другу код: ${gameId}`;
         }
-        document.getElementById('status').innerHTML = `Вы играете за ${myPlayer}. Код игры: ${gameId}`;
-        waitForUpdates();
+        document.getElementById('statusMsg').innerHTML = `Игра началась! Вы — ${myPlayer}`;
+        document.getElementById('menu').style.display = 'none';
+        document.getElementById('gameArea').style.display = 'block';
+        
+        if (updateInterval) clearInterval(updateInterval);
+        updateInterval = setInterval(loadState, 2000);
+        
         render();
+        return true;
     }
 
     function render() {
-        // Минимальная отрисовка — можно позже украсить
         const container = document.getElementById('bigGrid');
+        if (!container) return;
         container.innerHTML = '';
-        for (let big=0; big<9; big++) {
+        const myTurn = myPlayer === (currentPlayer === 0 ? 'X' : 'O');
+        
+        for (let big = 0; big < 9; big++) {
             const bigDiv = document.createElement('div');
             bigDiv.className = 'big-cell';
+            if (!gameWinner && nextBig !== null && nextBig === big && myTurn) bigDiv.classList.add('highlight');
+            if (bigWinner[big]) {
+                const overlay = document.createElement('div');
+                overlay.className = 'winner-overlay';
+                overlay.textContent = bigWinner[big];
+                bigDiv.appendChild(overlay);
+            }
             const smallDiv = document.createElement('div');
             smallDiv.className = 'small-grid';
-            for (let small=0; small<9; small++) {
+            for (let small = 0; small < 9; small++) {
                 const cell = document.createElement('div');
                 cell.className = 'cell';
                 const val = smallGrid[big][small];
                 if (val) {
-                    cell.classList.add('taken');
+                    cell.classList.add('taken', val === 'X' ? 'x' : 'o');
                     cell.textContent = val;
                 } else {
                     cell.textContent = '';
-                    if (!gameWinner && myPlayer === (currentPlayer===0?'X':'O') && (nextBig===null || big===nextBig)) {
+                    if (!gameWinner && myTurn && (nextBig === null || big === nextBig)) {
                         cell.onclick = () => makeMove(big, small);
                     }
                 }
@@ -184,18 +212,21 @@
             bigDiv.appendChild(smallDiv);
             container.appendChild(bigDiv);
         }
-        document.getElementById('status').innerHTML = `Сейчас ходит: ${currentPlayer===0?'X':'O'}`;
+        
+        document.getElementById('scoreX').innerText = scores[0];
+        document.getElementById('scoreO').innerText = scores[1];
+        const statusDiv = document.getElementById('statusMsg');
+        if (gameWinner) statusDiv.innerHTML = `🏆 ПОБЕДИЛ ${gameWinner}`;
+        else if (myTurn) statusDiv.innerHTML = `Ваш ход (${myPlayer}) — ходите в зелёный квадрат`;
+        else statusDiv.innerHTML = `Ход соперника... (${currentPlayer === 0 ? 'X' : 'O'})`;
     }
 
-    // Запуск: создать новую игру или подключиться
-    const urlParams = new URLSearchParams(window.location.search);
-    const joinId = urlParams.get('join');
-    if (joinId) {
-        initGame(joinId);
-    } else {
-        initGame();
-    }
-
+    document.getElementById('newGameBtn').onclick = () => initGame();
+    document.getElementById('joinGameBtn').onclick = () => {
+        const code = document.getElementById('joinCode').value.trim().toUpperCase();
+        if (code) initGame(code);
+        else alert('Введите код игры');
+    };
     document.getElementById('resetBtn').onclick = async () => {
         smallGrid = Array(9).fill().map(()=>Array(9).fill(null));
         bigWinner = Array(9).fill(null);
