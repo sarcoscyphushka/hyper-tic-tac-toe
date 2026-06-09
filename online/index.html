@@ -1,1 +1,212 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Гипер-крестики-нолики — онлайн версия</title>
+    <style>
+        /* Здесь можно скопировать стили из твоей локальной версии, 
+           но для начала оставим минимальные */
+        body { font-family: sans-serif; background: white; padding: 20px; }
+        .game-area { max-width: 800px; margin: auto; }
+        .big-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; background: #333; padding: 8px; border-radius: 12px; }
+        .big-cell { background: white; border-radius: 8px; padding: 6px; aspect-ratio:1; }
+        .small-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 3px; background: #ddd; padding: 3px; border-radius: 5px; height: 100%; }
+        .cell { background: white; aspect-ratio:1; display: flex; align-items: center; justify-content: center; font-size: 1.2em; font-weight: bold; border-radius: 4px; cursor: pointer; }
+        .cell.taken { cursor: not-allowed; opacity:0.6; }
+        .status { margin: 20px 0; padding: 12px; background: #f0f0f0; border-radius: 12px; text-align: center; }
+        button { margin-top: 20px; padding: 10px 20px; }
+    </style>
+</head>
+<body>
+<div class="game-area">
+    <div class="status" id="status">Подключение...</div>
+    <div id="bigGrid" class="big-grid"></div>
+    <button id="resetBtn">Новая игра</button>
+</div>
 
+<script>
+    // Базовое состояние игры (как в локальной версии, но без синхронизации через Яндекс.Диск)
+    let smallGrid = Array(9).fill().map(() => Array(9).fill(null));
+    let bigWinner = Array(9).fill(null);
+    let bigLocked = Array(9).fill(false);
+    let scores = [0, 0];
+    let currentPlayer = 0;
+    let nextBig = null;
+    let gameWinner = null;
+    let myPlayer = null; // 'X' или 'O'
+    let gameId = null;
+
+    const winLines = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+    const gridNames = ['СЗ', 'С', 'СВ', 'З', 'Ц', 'В', 'ЮЗ', 'Ю', 'ЮВ'];
+
+    // Функции игровой логики (те же, что в локальной версии)
+    function checkSmallWin(bigIdx) {
+        if (bigLocked[bigIdx]) return bigWinner[bigIdx];
+        const grid = smallGrid[bigIdx];
+        for (let line of winLines) {
+            const [a,b,c] = line;
+            if (grid[a] && grid[a] === grid[b] && grid[a] === grid[c]) {
+                bigWinner[bigIdx] = grid[a];
+                bigLocked[bigIdx] = true;
+                if (grid[a] === 'X') scores[0]++;
+                else scores[1]++;
+                return grid[a];
+            }
+        }
+        return null;
+    }
+
+    function updateGame() {
+        for (let i = 0; i < 9; i++) if (!bigLocked[i]) checkSmallWin(i);
+        gameWinner = null;
+        if (scores[0] >= 5) gameWinner = 'X';
+        else if (scores[1] >= 5) gameWinner = 'O';
+        if (!gameWinner) {
+            for (let line of winLines) {
+                const [a,b,c] = line;
+                if (bigWinner[a] && bigWinner[a] === bigWinner[b] && bigWinner[a] === bigWinner[c]) {
+                    gameWinner = bigWinner[a];
+                    break;
+                }
+            }
+        }
+    }
+
+    async function makeMove(bigIdx, smallIdx) {
+        if (gameWinner) return;
+        if (myPlayer !== (currentPlayer === 0 ? 'X' : 'O')) { alert("Сейчас не ваш ход"); return; }
+        if (nextBig !== null && bigIdx !== nextBig) { alert(`Ходите в ${gridNames[nextBig]}`); return; }
+        if (smallGrid[bigIdx][smallIdx] !== null) { alert("Занято"); return; }
+
+        smallGrid[bigIdx][smallIdx] = myPlayer;
+        checkSmallWin(bigIdx);
+        updateGame();
+        nextBig = smallIdx;
+        currentPlayer = 1 - currentPlayer;
+
+        await saveState();
+        render();
+    }
+
+    async function saveState() {
+        if (!gameId) return;
+        const state = { smallGrid, bigLocked, currentPlayer, nextBig, gameWinner, scores };
+        await fetch('/api/save-state', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ gameId, state })
+        });
+    }
+
+    async function loadState() {
+        if (!gameId) return;
+        const res = await fetch(`/api/get-state/${gameId}`);
+        if (res.ok) {
+            const state = await res.json();
+            smallGrid = state.smallGrid;
+            bigLocked = state.bigLocked;
+            currentPlayer = state.currentPlayer;
+            nextBig = state.nextBig;
+            gameWinner = state.gameWinner;
+            scores = state.scores;
+            // пересчитать bigWinner
+            for (let i=0;i<9;i++) if (bigLocked[i]) checkSmallWin(i);
+            render();
+        }
+    }
+
+    async function waitForUpdates() {
+        while (true) {
+            const res = await fetch(`/api/wait-state/${gameId}`);
+            if (res.status === 200) {
+                const state = await res.json();
+                smallGrid = state.smallGrid;
+                bigLocked = state.bigLocked;
+                currentPlayer = state.currentPlayer;
+                nextBig = state.nextBig;
+                gameWinner = state.gameWinner;
+                scores = state.scores;
+                for (let i=0;i<9;i++) if (bigLocked[i]) checkSmallWin(i);
+                render();
+            }
+            await new Promise(r => setTimeout(r, 500));
+        }
+    }
+
+    async function initGame(joinGameId = null) {
+        if (joinGameId) {
+            gameId = joinGameId;
+            const res = await fetch('/api/join-game', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ gameId })
+            });
+            if (!res.ok) { alert("Не удалось подключиться"); return; }
+            myPlayer = 'O';
+            await loadState();
+        } else {
+            const res = await fetch('/api/new-game', { method: 'POST' });
+            const data = await res.json();
+            gameId = data.gameId;
+            myPlayer = 'X';
+            document.getElementById('status').innerHTML = `Игра создана. Код: ${gameId}. Отправьте его другу.`;
+            await saveState();
+        }
+        document.getElementById('status').innerHTML = `Вы играете за ${myPlayer}. Код игры: ${gameId}`;
+        waitForUpdates();
+        render();
+    }
+
+    function render() {
+        // Минимальная отрисовка — можно позже украсить
+        const container = document.getElementById('bigGrid');
+        container.innerHTML = '';
+        for (let big=0; big<9; big++) {
+            const bigDiv = document.createElement('div');
+            bigDiv.className = 'big-cell';
+            const smallDiv = document.createElement('div');
+            smallDiv.className = 'small-grid';
+            for (let small=0; small<9; small++) {
+                const cell = document.createElement('div');
+                cell.className = 'cell';
+                const val = smallGrid[big][small];
+                if (val) {
+                    cell.classList.add('taken');
+                    cell.textContent = val;
+                } else {
+                    cell.textContent = '';
+                    if (!gameWinner && myPlayer === (currentPlayer===0?'X':'O') && (nextBig===null || big===nextBig)) {
+                        cell.onclick = () => makeMove(big, small);
+                    }
+                }
+                smallDiv.appendChild(cell);
+            }
+            bigDiv.appendChild(smallDiv);
+            container.appendChild(bigDiv);
+        }
+        document.getElementById('status').innerHTML = `Сейчас ходит: ${currentPlayer===0?'X':'O'}`;
+    }
+
+    // Запуск: создать новую игру или подключиться
+    const urlParams = new URLSearchParams(window.location.search);
+    const joinId = urlParams.get('join');
+    if (joinId) {
+        initGame(joinId);
+    } else {
+        initGame();
+    }
+
+    document.getElementById('resetBtn').onclick = async () => {
+        smallGrid = Array(9).fill().map(()=>Array(9).fill(null));
+        bigWinner = Array(9).fill(null);
+        bigLocked = Array(9).fill(false);
+        scores = [0,0];
+        currentPlayer = 0;
+        nextBig = null;
+        gameWinner = null;
+        await saveState();
+        render();
+    };
+</script>
+</body>
+</html>
