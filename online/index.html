@@ -145,36 +145,41 @@
         render();
     }
 
-    async function initGame(joinGameId = null) {
-        if (joinGameId) {
-            gameId = joinGameId;
-            const res = await fetch('/api/join-game', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ gameId })
-            });
-            if (!res.ok) { alert("Не удалось подключиться"); return false; }
-            myPlayer = 'O';
-            await loadState();
-            document.getElementById('gameInfo').innerHTML = `Вы играете за O. Код игры: ${gameId}`;
-        } else {
-            const res = await fetch('/api/new-game', { method: 'POST' });
-            const data = await res.json();
-            gameId = data.gameId;
-            myPlayer = 'X';
-            await saveState();
-            document.getElementById('gameInfo').innerHTML = `Вы играете за X. Код игры: ${gameId}<br>Отправьте другу код: ${gameId}`;
-        }
-        document.getElementById('statusMsg').innerHTML = `Игра началась! Вы — ${myPlayer}`;
-        document.getElementById('menu').style.display = 'none';
-        document.getElementById('gameArea').style.display = 'block';
-        
-        if (updateInterval) clearInterval(updateInterval);
-        updateInterval = setInterval(loadState, 2000);
-        
-        render();
-        return true;
+   async function initGame(joinGameId = null) {
+    if (joinGameId) {
+        gameId = joinGameId;
+        const res = await fetch('/api/join-game', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ gameId })
+        });
+        if (!res.ok) { alert("Не удалось подключиться"); return false; }
+        myPlayer = 'O';
+        await loadState();
+        document.getElementById('gameInfo').innerHTML = `Вы играете за O. Код игры: ${gameId}`;
+    } else {
+        const res = await fetch('/api/new-game', { method: 'POST' });
+        const data = await res.json();
+        gameId = data.gameId;
+        myPlayer = 'X';
+        await saveState();
+        // ПОКАЗЫВАЕМ КОД ИГРЫ БОЛЬШИМ ТЕКСТОМ
+        document.getElementById('gameInfo').innerHTML = `
+            <strong style="font-size:1.2em;">✅ Игра создана!</strong><br>
+            Ваш код игры: <strong style="font-size:1.8em; color:#2e7d32;">${gameId}</strong><br>
+            Отправьте его другу, чтобы он подключился.
+        `;
     }
+    document.getElementById('statusMsg').innerHTML = `Игра началась! Вы — ${myPlayer}`;
+    document.getElementById('menu').style.display = 'none';
+    document.getElementById('gameArea').style.display = 'block';
+    
+    if (updateInterval) clearInterval(updateInterval);
+    updateInterval = setInterval(loadState, 2000);
+    
+    render();
+    return true;
+}
 
     function render() {
         const container = document.getElementById('bigGrid');
