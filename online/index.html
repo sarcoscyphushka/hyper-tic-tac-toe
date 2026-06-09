@@ -414,7 +414,7 @@
 
     async function saveState() {
         if (!gameId) return;
-        const state = { smallGrid, bigLocked, currentPlayer, nextBig, gameWinner, scores, moveHistory };
+        const state = { smallGrid, bigLocked, bigWinner, currentPlayer, nextBig, gameWinner, scores, moveHistory };
         await fetch('/api/save-state', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -435,22 +435,7 @@
         scores = state.scores;
         moveHistory = state.moveHistory || [];
         
-        // Восстанавливаем bigWinner на основе bigLocked
-        for (let i = 0; i < 9; i++) {
-            if (bigLocked[i]) {
-                // Находим победителя в квадрате по маленьким клеткам
-                const grid = smallGrid[i];
-                for (let line of winLines) {
-                    const [a,b,c] = line;
-                    if (grid[a] && grid[a] === grid[b] && grid[a] === grid[c]) {
-                        bigWinner[i] = grid[a];
-                        break;
-                    }
-                }
-            } else {
-                bigWinner[i] = null;
-            }
-        }
+        bigWinner = state.bigWinner || Array(9).fill(null);
         
         updateNotationUI();
         render();
