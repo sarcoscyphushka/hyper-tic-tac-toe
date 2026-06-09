@@ -689,15 +689,22 @@ document.addEventListener('DOMContentLoaded', function() {
         const img2 = 'ryba.png';
         let isImg1 = true;
         cornerImg.addEventListener('click', function() {
-            if (isImg1) {
-                this.src = img2;
-                this.style.width = 'auto';
-                this.style.height = '450px';
-            } else {
-                this.src = img1;
-                this.style.width = '';
-                this.style.height = '';
-            }
+           if (isImg1) {
+    this.src = img2;
+    // Убираем жёсткие размеры, позволяем картинке быть самой собой
+    this.style.width = '';
+    this.style.height = '';
+    // Но ограничиваем максимальный размер, чтобы она не закрывала весь экран
+    this.style.maxWidth = '600px';
+    this.style.maxHeight = '600px';
+} else {
+    this.src = img1;
+    // Возвращаем исходные настройки для первой картинки (как в CSS)
+    this.style.width = '';
+    this.style.height = '';
+    this.style.maxWidth = '';
+    this.style.maxHeight = '';
+}
             isImg1 = !isImg1;
         });
     }
