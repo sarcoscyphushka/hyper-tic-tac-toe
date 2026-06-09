@@ -2,61 +2,334 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Гипер-крестики-нолики — онлайн</title>
     <style>
-        * { user-select: none; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f5f5; min-height: 100vh; margin: 0; padding: 20px; display: flex; justify-content: center; align-items: center; }
-        .container { max-width: 800px; width: 100%; background: white; border-radius: 28px; padding: 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-        .scores { display: flex; gap: 16px; margin-bottom: 24px; }
-        .score-card { flex: 1; text-align: center; padding: 12px; border-radius: 20px; font-weight: bold; }
-        .score-x { background: #E3F2FD; color: #0D47A1; }
-        .score-o { background: #FFEBEE; color: #B71C1C; }
-        .score-symbol { font-size: 1.1em; display: block; margin-bottom: 6px; }
-        .score-label { font-size: 0.8em; opacity: 0.7; display: block; }
-        .score-value { font-size: 2.2em; font-weight: bold; line-height: 1; margin-top: 4px; }
-        .status { background: #f0f0f0; padding: 12px; border-radius: 16px; text-align: center; font-size: 1.2em; font-weight: bold; margin-bottom: 20px; }
-        .big-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; background: #2c3e50; padding: 10px; border-radius: 16px; }
-        .big-cell { background: #ecf0f1; border-radius: 12px; padding: 8px; position: relative; }
-        .big-cell.highlight { background: #a5d6a7; box-shadow: 0 0 0 3px #2e7d32; }
-        .small-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; background: #bdc3c7; padding: 4px; border-radius: 8px; }
-        .cell { background: white; aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-size: 1.3em; font-weight: bold; border-radius: 6px; cursor: default; }
+        * {
+            user-select: none;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: white;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .app-container {
+            max-width: 1100px;
+            width: 100%;
+            display: flex;
+            gap: 24px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-bottom: 40px;
+        }
+        .game-area {
+            background: white;
+            border-radius: 28px;
+            padding: 24px;
+            flex: 2;
+            min-width: 300px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e0e0e0;
+        }
+        .notation-area {
+            background: white;
+            border-radius: 28px;
+            padding: 24px;
+            flex: 1;
+            min-width: 220px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e0e0e0;
+        }
+        .scores {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .score-card {
+            flex: 1;
+            text-align: center;
+            padding: 12px 8px;
+            border-radius: 20px;
+            font-weight: bold;
+        }
+        .score-x {
+            background: #E3F2FD;
+            color: #0D47A1;
+        }
+        .score-o {
+            background: #FFEBEE;
+            color: #B71C1C;
+        }
+        .score-symbol {
+            font-size: 1.1em;
+            font-weight: bold;
+            display: block;
+            margin-bottom: 6px;
+        }
+        .score-label {
+            font-size: 0.8em;
+            opacity: 0.7;
+            display: block;
+        }
+        .score-value {
+            font-size: 2.2em;
+            font-weight: bold;
+            line-height: 1;
+            margin-top: 4px;
+        }
+        .status-bar {
+            background: #f0f0f0;
+            padding: 12px;
+            border-radius: 16px;
+            text-align: center;
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        .big-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            background: #2c3e50;
+            padding: 10px;
+            border-radius: 16px;
+        }
+        .big-cell {
+            background: #ecf0f1;
+            border-radius: 12px;
+            padding: 8px;
+            position: relative;
+        }
+        .big-cell.highlight {
+            background: #a5d6a7;
+            box-shadow: 0 0 0 4px #1b5e20, 0 0 0 8px rgba(27, 94, 32, 0.3);
+            animation: pulse 1.2s ease-in-out infinite;
+        }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 4px #1b5e20, 0 0 0 8px rgba(27, 94, 32, 0.3); }
+            50% { box-shadow: 0 0 0 4px #2e7d32, 0 0 0 12px rgba(46, 125, 50, 0.5); }
+            100% { box-shadow: 0 0 0 4px #1b5e20, 0 0 0 8px rgba(27, 94, 32, 0.3); }
+        }
+        .small-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 4px;
+            background: #bdc3c7;
+            padding: 4px;
+            border-radius: 8px;
+        }
+        .cell {
+            background: white;
+            aspect-ratio: 1 / 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3em;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: default;
+            transition: 0.05s linear;
+        }
         .cell.x { color: #2196F3; }
         .cell.o { color: #F44336; }
         .cell.taken { cursor: not-allowed; }
-        .cell:not(.taken):hover { background: #e0e0e0; transform: scale(0.96); cursor: pointer; }
-        .winner-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; font-size: calc(100% + 2vw); font-weight: bold; opacity: 0.35; pointer-events: none; }
-        .reset-btn { margin-top: 24px; width: 100%; padding: 12px; background: #667eea; color: white; border: none; border-radius: 40px; font-size: 1.1em; cursor: pointer; }
-        .reset-btn:hover { background: #5a67d8; }
-        .game-info { margin-top: 16px; text-align: center; font-size: 0.9em; color: #666; }
-        .menu { text-align: center; margin-bottom: 20px; }
-        .menu button { margin: 5px; padding: 10px 20px; }
-        .join-panel { margin-top: 10px; }
-        .join-panel input { padding: 8px; margin-right: 10px; }
+        .cell:not(.taken):hover {
+            background: #e0e0e0;
+            transform: scale(0.96);
+            cursor: pointer;
+        }
+        .cell:active:not(.taken) { transform: scale(0.96); }
+        .winner-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: calc(100% + 2vw);
+            font-weight: bold;
+            opacity: 0.35;
+            pointer-events: none;
+            z-index: 5;
+        }
+        .reset-btn {
+            margin-top: 24px;
+            width: 100%;
+            padding: 12px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 40px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .reset-btn:hover {
+            background: #5a67d8;
+            transform: scale(0.98);
+        }
+        .game-field-wrapper {
+            position: relative;
+            margin: 60px 70px;
+        }
+        .compass-label {
+            position: absolute;
+            font-weight: bold;
+            color: #d32f2f;
+            font-size: 1.2rem;
+            letter-spacing: 1px;
+            background: none;
+            padding: 0;
+            white-space: nowrap;
+            text-shadow: 0 0 2px white;
+        }
+        .label-north { top: -28px; left: 50%; transform: translateX(-50%); }
+        .label-south { bottom: -28px; left: 50%; transform: translateX(-50%); }
+        .label-west { left: -55px; top: 50%; transform: translateY(-50%) rotate(-90deg); transform-origin: center; }
+        .label-east { right: -55px; top: 50%; transform: translateY(-50%) rotate(90deg); transform-origin: center; }
+        .turn-hint {
+            text-align: center;
+            margin-top: 16px;
+            font-size: 0.9em;
+            color: #2c3e50;
+            background: #fff3e0;
+            padding: 6px;
+            border-radius: 20px;
+        }
+        .notation-title {
+            font-weight: bold;
+            font-size: 1.2em;
+            margin-bottom: 12px;
+            text-align: center;
+            border-bottom: 2px solid #ddd;
+            padding-bottom: 6px;
+        }
+        .current-turn {
+            background: #e8f5e9;
+            padding: 8px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            text-align: center;
+            font-weight: bold;
+        }
+        .notation-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            overflow-y: auto;
+            flex-grow: 1;
+            max-height: 450px;
+            font-family: monospace;
+            font-size: 0.9em;
+        }
+        .notation-list li {
+            padding: 6px;
+            border-bottom: 1px solid #eee;
+        }
+        .title-image-wrapper {
+            text-align: center;
+            margin-bottom: 20px;
+            width: 100%;
+        }
+        .title-image {
+            max-width: 100%;
+            height: auto;
+            display: inline-block;
+        }
+        .menu {
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 20px;
+        }
+        .menu button {
+            margin: 5px;
+            padding: 10px 20px;
+            font-size: 1.1em;
+        }
+        .join-panel {
+            margin-top: 15px;
+        }
+        .join-panel input {
+            padding: 8px;
+            font-size: 1em;
+            margin-right: 10px;
+        }
+        .game-info {
+            margin-top: 10px;
+            text-align: center;
+            font-size: 0.9em;
+            background: #e3f2fd;
+            padding: 8px;
+            border-radius: 12px;
+        }
+        @media (max-width: 700px) {
+            .app-container { flex-direction: column; }
+            .winner-overlay { font-size: 3em; }
+        }
     </style>
 </head>
 <body>
-<div class="container">
-    <div id="menu" class="menu">
-        <button id="newGameBtn">✨ Новая игра (буду X)</button>
-        <div class="join-panel">
-            <input type="text" id="joinCode" placeholder="Код игры">
-            <button id="joinGameBtn">🔗 Подключиться (буду O)</button>
-        </div>
+<div class="title-image-wrapper">
+    <img src="krestiki.png" alt="Гипер-крестики-нолики" class="title-image">
+</div>
+
+<div id="menu" class="menu">
+    <button id="newGameBtn">✨ Новая игра (буду X)</button>
+    <div class="join-panel">
+        <input type="text" id="joinCode" placeholder="Код игры">
+        <button id="joinGameBtn">🔗 Подключиться (буду O)</button>
     </div>
-    <div id="gameArea" style="display: none;">
+</div>
+
+<div id="gameArea" class="app-container" style="display: none;">
+    <div class="game-area">
         <div class="scores">
-            <div class="score-card score-x"><div class="score-symbol">❌ КРЕСТИКИ</div><div class="score-label">Счёт:</div><div class="score-value" id="scoreX">0</div></div>
-            <div class="score-card score-o"><div class="score-symbol">⭕ НОЛИКИ</div><div class="score-label">Счёт:</div><div class="score-value" id="scoreO">0</div></div>
+            <div class="score-card score-x">
+                <div class="score-symbol">❌ КРЕСТИКИ</div>
+                <div class="score-label">Счёт:</div>
+                <div class="score-value" id="scoreX">0</div>
+            </div>
+            <div class="score-card score-o">
+                <div class="score-symbol">⭕ НОЛИКИ</div>
+                <div class="score-label">Счёт:</div>
+                <div class="score-value" id="scoreO">0</div>
+            </div>
         </div>
-        <div class="status" id="statusMsg">Подключение...</div>
-        <div id="bigGrid" class="big-grid"></div>
-        <div class="game-info" id="gameInfo"></div>
+        <div class="status-bar" id="statusMsg">Подключение...</div>
+        <div class="game-field-wrapper">
+            <div id="bigGrid" class="big-grid"></div>
+            <div class="compass-label label-north">СЕВЕР</div>
+            <div class="compass-label label-south">ЮГ</div>
+            <div class="compass-label label-west">ЗАПАД</div>
+            <div class="compass-label label-east">ВОСТОК</div>
+        </div>
+        <div class="turn-hint" id="turnHint"></div>
         <button class="reset-btn" id="resetBtn">🔄 Новая игра</button>
+        <div class="game-info" id="gameInfo"></div>
+    </div>
+    <div class="notation-area">
+        <div class="notation-title">📜 Нотация ходов</div>
+        <div class="current-turn" id="currentTurnDisplay">Сейчас ходит: —</div>
+        <ul class="notation-list" id="notationList">
+            <li style="color: #aaa;">— Ходы будут здесь —</li>
+        </ul>
     </div>
 </div>
 
 <script>
+    // ----- ИГРОВОЕ СОСТОЯНИЕ -----
     let smallGrid = Array(9).fill().map(() => Array(9).fill(null));
     let bigWinner = Array(9).fill(null);
     let bigLocked = Array(9).fill(false);
@@ -66,11 +339,41 @@
     let gameWinner = null;
     let myPlayer = null;
     let gameId = null;
+    let moveHistory = [];
     let updateInterval = null;
 
     const winLines = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
     const gridNames = ['СЗ', 'С', 'СВ', 'З', 'Ц', 'В', 'ЮЗ', 'Ю', 'ЮВ'];
 
+    // ----- НОТАЦИЯ -----
+    function addNotation(bigIdx, smallIdx, player) {
+        const bigName = gridNames[bigIdx];
+        const nextBigName = gridNames[smallIdx];
+        moveHistory.push(`${player}: ${bigName} → ${nextBigName}`);
+        updateNotationUI();
+    }
+
+    function updateNotationUI() {
+        const container = document.getElementById('notationList');
+        container.innerHTML = '';
+        if (moveHistory.length === 0) {
+            container.innerHTML = '<li style="color: #aaa;">— Ходы будут здесь —</li>';
+            return;
+        }
+        moveHistory.forEach((move, idx) => {
+            const li = document.createElement('li');
+            li.textContent = `${idx+1}. ${move}`;
+            container.appendChild(li);
+        });
+        container.scrollTop = container.scrollHeight;
+    }
+
+    function clearNotation() {
+        moveHistory = [];
+        updateNotationUI();
+    }
+
+    // ----- ЛОГИКА ИГРЫ -----
     function checkSmallWin(bigIdx) {
         if (bigLocked[bigIdx]) return bigWinner[bigIdx];
         const grid = smallGrid[bigIdx];
@@ -105,7 +408,7 @@
 
     async function saveState() {
         if (!gameId) return;
-        const state = { smallGrid, bigLocked, currentPlayer, nextBig, gameWinner, scores };
+        const state = { smallGrid, bigLocked, currentPlayer, nextBig, gameWinner, scores, moveHistory };
         await fetch('/api/save-state', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -124,7 +427,9 @@
             nextBig = state.nextBig;
             gameWinner = state.gameWinner;
             scores = state.scores;
+            moveHistory = state.moveHistory || [];
             for (let i=0;i<9;i++) if (bigLocked[i]) checkSmallWin(i);
+            updateNotationUI();
             render();
         }
     }
@@ -136,6 +441,7 @@
         if (smallGrid[bigIdx][smallIdx] !== null) { alert("Занято"); return; }
 
         smallGrid[bigIdx][smallIdx] = myPlayer;
+        addNotation(bigIdx, smallIdx, myPlayer);
         checkSmallWin(bigIdx);
         updateGame();
         nextBig = smallIdx;
@@ -145,41 +451,41 @@
         render();
     }
 
-   async function initGame(joinGameId = null) {
-    if (joinGameId) {
-        gameId = joinGameId;
-        const res = await fetch('/api/join-game', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ gameId })
-        });
-        if (!res.ok) { alert("Не удалось подключиться"); return false; }
-        myPlayer = 'O';
-        await loadState();
-        document.getElementById('gameInfo').innerHTML = `Вы играете за O. Код игры: ${gameId}`;
-    } else {
-        const res = await fetch('/api/new-game', { method: 'POST' });
-        const data = await res.json();
-        gameId = data.gameId;
-        myPlayer = 'X';
-        await saveState();
-        // ПОКАЗЫВАЕМ КОД ИГРЫ БОЛЬШИМ ТЕКСТОМ
-        document.getElementById('gameInfo').innerHTML = `
-            <strong style="font-size:1.2em;">✅ Игра создана!</strong><br>
-            Ваш код игры: <strong style="font-size:1.8em; color:#2e7d32;">${gameId}</strong><br>
-            Отправьте его другу, чтобы он подключился.
-        `;
+    async function initGame(joinGameId = null) {
+        if (joinGameId) {
+            gameId = joinGameId;
+            const res = await fetch('/api/join-game', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ gameId })
+            });
+            if (!res.ok) { alert("Не удалось подключиться"); return false; }
+            myPlayer = 'O';
+            await loadState();
+            document.getElementById('gameInfo').innerHTML = `Вы играете за O. Код игры: ${gameId}`;
+        } else {
+            const res = await fetch('/api/new-game', { method: 'POST' });
+            const data = await res.json();
+            gameId = data.gameId;
+            myPlayer = 'X';
+            await saveState();
+            document.getElementById('gameInfo').innerHTML = `
+                <strong>✅ Игра создана!</strong><br>
+                Ваш код игры: <strong style="font-size:1.5em;">${gameId}</strong><br>
+                Отправьте его другу, чтобы он подключился.
+            `;
+        }
+        document.getElementById('statusMsg').innerHTML = `Игра началась! Вы — ${myPlayer}`;
+        document.getElementById('currentTurnDisplay').innerHTML = `Сейчас ходит: X`;
+        document.getElementById('menu').style.display = 'none';
+        document.getElementById('gameArea').style.display = 'flex';
+        
+        if (updateInterval) clearInterval(updateInterval);
+        updateInterval = setInterval(loadState, 2000);
+        
+        render();
+        return true;
     }
-    document.getElementById('statusMsg').innerHTML = `Игра началась! Вы — ${myPlayer}`;
-    document.getElementById('menu').style.display = 'none';
-    document.getElementById('gameArea').style.display = 'block';
-    
-    if (updateInterval) clearInterval(updateInterval);
-    updateInterval = setInterval(loadState, 2000);
-    
-    render();
-    return true;
-}
 
     function render() {
         const container = document.getElementById('bigGrid');
@@ -220,10 +526,27 @@
         
         document.getElementById('scoreX').innerText = scores[0];
         document.getElementById('scoreO').innerText = scores[1];
+        
         const statusDiv = document.getElementById('statusMsg');
-        if (gameWinner) statusDiv.innerHTML = `🏆 ПОБЕДИЛ ${gameWinner}`;
-        else if (myTurn) statusDiv.innerHTML = `Ваш ход (${myPlayer}) — ходите в зелёный квадрат`;
-        else statusDiv.innerHTML = `Ход соперника... (${currentPlayer === 0 ? 'X' : 'O'})`;
+        const turnDisplay = document.getElementById('currentTurnDisplay');
+        const hintDiv = document.getElementById('turnHint');
+        
+        if (gameWinner) {
+            statusDiv.innerHTML = `🏆 ПОБЕДИЛ ${gameWinner} 🏆`;
+            turnDisplay.innerHTML = `Игра окончена. Победил ${gameWinner}`;
+            hintDiv.innerHTML = '';
+        } else {
+            const mark = currentPlayer === 0 ? 'X' : 'O';
+            if (myTurn) {
+                statusDiv.innerHTML = `🎯 Ваш ход (${myPlayer})`;
+                if (nextBig === null) hintDiv.innerHTML = `✨ Первый ход! Можно ходить в любой квадрат ✨`;
+                else hintDiv.innerHTML = `📌 Следующий квадрат: ${gridNames[nextBig]}`;
+            } else {
+                statusDiv.innerHTML = `⏳ Ход соперника (${mark})...`;
+                hintDiv.innerHTML = `📌 Следующий квадрат: ${gridNames[nextBig]}`;
+            }
+            turnDisplay.innerHTML = `Сейчас ходит: ${mark}`;
+        }
     }
 
     document.getElementById('newGameBtn').onclick = () => initGame();
@@ -240,6 +563,7 @@
         currentPlayer = 0;
         nextBig = null;
         gameWinner = null;
+        clearNotation();
         await saveState();
         render();
     };
