@@ -17,8 +17,9 @@
     margin: 0;
     padding: 20px;
     display: flex;
-    justify-content: center;
     align-items: center;
+    flex-direction: column;
+    justify-content: space-between;
     }
         .app-container {
             max-width: 1100px;
@@ -392,14 +393,15 @@
     display: inline-block;
 }   
 
- .footer {
-      margin-top: 40px;
-      padding-top: 20px;
-      border-top: 1px solid #ccc;
-      text-align: center;
-      font-size: 0.9em;
-      color: #555;
-    }
+.footer {
+    margin-top: auto;
+    width: 100%;
+    text-align: center;
+    padding: 20px;
+    border-top: 1px solid #ccc;
+    font-size: 0.9em;
+    color: #555;
+}
 
     .footer a {
       color: #990D66;
@@ -457,6 +459,10 @@
         </ul>
     </div>
 </div>
+
+<footer class="footer">
+  Приложение создано творческим союзом  <a href="https://sarcoscyphushka.github.io/glirarium/" rel="noopener noreferrer">Сони</a> и её умной и замечательной дипсицы, пожелавшей остаться анонимной.
+</footer>
 
 <script>
     // ----- ИГРОВОЕ СОСТОЯНИЕ -----
@@ -700,8 +706,5 @@ document.addEventListener('DOMContentLoaded', function() {
      alt="Светофор!" 
      class="corner-image">
 
-<footer class="footer">
-  Приложение создано творческим союзом  <a href="https://sarcoscyphushka.github.io/glirarium/" rel="noopener noreferrer">Сони</a> и её умной и замечательной дипсицы, пожелавшей остаться анонимной.
-</footer>
 </body>
 </html>
