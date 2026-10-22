@@ -142,10 +142,11 @@
         .cell.x { color: #2196F3; }
         .cell.o { color: #F44336; }
         .cell.taken { cursor: not-allowed; }
-        .cell:not(.taken):hover {
-            background: #e0e0e0;
-            transform: scale(0.96);
-            cursor: pointer;
+        cell.clickable:not(.taken):hover {
+            background: #e0e0e0 !important;
+            transform: scale(0.96) !important;
+            cursor: pointer !important;
+        }
         }
         .cell:active:not(.taken) { transform: scale(0.96); }
         .winner-overlay {
