@@ -412,6 +412,11 @@
     }
 }
 
+function hasFreeCells(bigIdx) {
+    if (!smallGrid[bigIdx]) return false;
+    return smallGrid[bigIdx].some(cell => cell === null);
+}
+
     async function saveState() {
         if (!gameId) return;
         const state = { smallGrid, bigLocked, bigWinner, currentPlayer, nextBig, gameWinner, scores, moveHistory };
@@ -445,7 +450,11 @@
     async function makeMove(bigIdx, smallIdx) {
         if (gameWinner) return;
         if (myPlayer !== (currentPlayer === 0 ? 'X' : 'O')) { alert("Сейчас не ваш ход"); return; }
-        if (nextBig !== null && bigIdx !== nextBig) { alert(`Ходите в квадрат ${gridNames[nextBig]}`); return; }
+        const mustPlayInNext = nextBig !== null && hasFreeCells(nextBig);
+        if (mustPlayInNext && bigIdx !== nextBig) {
+        alert(`Ходите в квадрат ${gridNames[nextBig]}`);
+        return;
+        }
         if (smallGrid[bigIdx][smallIdx] !== null) { alert("Занято"); return; }
 
         smallGrid[bigIdx][smallIdx] = myPlayer;
@@ -504,7 +513,10 @@
         for (let big = 0; big < 9; big++) {
             const bigDiv = document.createElement('div');
             bigDiv.className = 'big-cell';
-            if (!gameWinner && nextBig !== null && nextBig === big && myTurn) bigDiv.classList.add('highlight');
+            const highlightTarget = nextBig !== null && hasFreeCells(nextBig) ? nextBig : null;
+            if (!gameWinner && highlightTarget !== null && highlightTarget === big && myTurn) {
+            bigDiv.classList.add('highlight');
+            }
             if (bigWinner[big]) {
                 const overlay = document.createElement('div');
                 overlay.className = 'winner-overlay';
@@ -522,8 +534,11 @@
                     cell.textContent = val;
                 } else {
                     cell.textContent = '';
-                    if (!gameWinner && myTurn && (nextBig === null || big === nextBig)) {
-                        cell.onclick = () => makeMove(big, small);
+                    // Если nextBig = null (первый ход) или в nextBig нет свободных клеток — можно кликать везде
+                const freeChoice = nextBig === null || !hasFreeCells(nextBig);
+                    if (!gameWinner && myTurn && (freeChoice || big === nextBig)) {
+                cell.onclick = () => makeMove(big, small);
+                cell.classList.add('clickable');
                     }
                 }
                 smallDiv.appendChild(cell);
@@ -539,19 +554,24 @@
         const turnDisplay = document.getElementById('currentTurnDisplay');
         const hintDiv = document.getElementById('turnHint');
         
-        if (gameWinner) {
+       if (gameWinner) {
             statusDiv.innerHTML = `🏆 ПОБЕДИЛ ${gameWinner} 🏆`;
             turnDisplay.innerHTML = `Игра окончена. Победил ${gameWinner}`;
             hintDiv.innerHTML = '';
-        } else {
+       } else {
             const mark = currentPlayer === 0 ? 'X' : 'O';
             if (myTurn) {
                 statusDiv.innerHTML = `🎯 Ваш ход (${myPlayer})`;
-                if (nextBig === null) hintDiv.innerHTML = `✨ Первый ход! Можно ходить в любой квадрат ✨`;
-                else hintDiv.innerHTML = `📌 Следующий квадрат: ${gridNames[nextBig]}`;
+                if (nextBig === null) {
+                  hintDiv.innerHTML = `✨ Первый ход! Можно ходить в любой квадрат ✨`;
+                } else if (!hasFreeCells(nextBig)) {
+                  hintDiv.innerHTML = `🔄 Квадрат ${gridNames[nextBig]} заполнен — можно ходить в любой квадрат!`;
+                } else {
+                  hintDiv.innerHTML = `📌 Следующий квадрат: ${gridNames[nextBig]}`;
+                }
             } else {
-                statusDiv.innerHTML = `⏳ Ход соперника (${mark})...`;
-                hintDiv.innerHTML = `📌 Следующий квадрат: ${gridNames[nextBig]}`;
+            statusDiv.innerHTML = `⏳ Ход соперника (${mark})...`;
+            hintDiv.innerHTML = nextBig !== null ? `📌 Следующий квадрат: ${gridNames[nextBig]}` : '';
             }
             turnDisplay.innerHTML = `Сейчас ходит: ${mark}`;
         }
